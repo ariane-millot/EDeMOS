@@ -1,6 +1,9 @@
-﻿# Downloaded from spglobal.com on 18/01/23,,,,,,,,,,,,,,,,,,,,,,,,,,
-,,,,,,,,,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021
-,,,,,,,,,,,Copper,Copper,Nickel,Nickel,Cobalt,Cobalt,Gold,Gold,Copper,Copper,Nickel,Nickel,Cobalt,Cobalt,Gold,Gold
+﻿# Downloaded from spglobal.com on 18/01/23,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,Copper,Copper,Nickel,Nickel,Cobalt,Cobalt,Gold,Gold,Copper,Copper,Nickel,Nickel,Cobalt,Cobalt,Gold,Gold
+,,,,,,,,,,,,,,,,,,,,,,,,,,
 Property Name,Property ID,Primary Commodity,Country / Region Name,Latitude (degrees),Longitude (degrees),Commodity 1,Commodity 2,Commodity 3,Ore Processed Mass (tonnes),"Ore Processed Mass
 (tonnes)","Commodity Production - tonne
 (tonnes)","Commodity Production - tonne
@@ -18,48 +21,92 @@ Property Name,Property ID,Primary Commodity,Country / Region Name,Latitude (degr
 (%)","MillHead Grade - percent
 (%)","MillHead Grade - g/tonne
 (g/tonne)","MillHead Grade - g/tonne
-(g/tonne)"
-Trident - Sentinel,36127,Copper,Zambia,-12.232380,25.147860,Copper,Cobalt,Nickel,"56,329,000","56,589,000","232,688","251,216",NA,NA,NA,NA,NA,NA,0.470,0.490,NA,NA,NA,NA,NA,NA
-Trident - Enterprise,76924,Nickel,Zambia,-12.192400,25.213570,Nickel,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Nkana SX-EW,76074,Copper,Zambia,-12.851640,28.207130,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Nkana Slag,29191,Cobalt,Zambia,-12.839440,28.210280,Cobalt,Copper,Gold,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Nkana,28270,Copper,Zambia,-12.831940,28.197780,Copper,Cobalt,,NA,NA,"55,068","17,900",NA,NA,NA,NA,NA,NA,1.600,1.850,NA,NA,NA,NA,NA,NA
-Nchanga SX-EW,76095,Copper,Zambia,-12.534980,27.846840,Copper,Cobalt,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Nchanga,28264,Copper,Zambia,-12.513080,27.857520,Copper,Cobalt,Iron Ore,"2,820,706","2,820,706","65,544","65,544",NA,NA,"1,252","1,252",NA,NA,0.782,0.782,NA,NA,0.120,0.120,NA,NA
-Mwinilunga,68283,Copper,Zambia,-11.860000,24.410000,Copper,Cobalt,Gold,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mwinilunga,32578,Copper,Zambia,-11.508611,24.284540,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mwambashi,33810,Copper,Zambia,-12.722000,27.968000,Copper,Cobalt,,NA,NA,"9,127","9,116",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mushiba,36066,Copper,Zambia,-13.060915,28.245237,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Munali,27453,Nickel,Zambia,-15.923330,28.134440,Nickel,Copper,Cobalt,"175,000","312,500",NA,NA,"1,400","2,500",NA,NA,NA,NA,NA,NA,1.000,1.000,NA,NA,NA,NA
-Muliashi North,30969,Copper,Zambia,-13.068610,28.325830,Copper,Cobalt,,NA,NA,"43,391","43,000",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mufulira SX-EW,76075,Copper,Zambia,-12.534750,28.233400,Copper,,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mufulira,28269,Copper,Zambia,-12.534170,28.238890,Copper,Cobalt,,"1,440,000",NA,"30,551","82,500",NA,NA,NA,NA,NA,NA,2.357,NA,NA,NA,NA,NA,NA,NA
-Mkushi,60679,Manganese,Zambia,-13.459000,29.680000,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mkushi,30495,Copper,Zambia,-13.932220,29.158440,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Mimbula,35948,Copper,Zambia,-12.629950,27.861330,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Maybach,76265,Manganese,Zambia,-14.130000,29.773330,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Maamba Collieries Ltd,40999,Coal,Zambia,-17.349350,27.184140,Coal,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Lumwana,28868,Copper,Zambia,-12.236220,25.822280,Copper,Gold,Cobalt,NA,"25,290,000","109,769","125,191",NA,NA,NA,NA,NA,NA,NA,0.520,NA,NA,NA,NA,NA,NA
-Lubambe,28837,Copper,Zambia,-12.299170,27.768060,Copper,Cobalt,,"2,654,100","2,520,000","45,584","43,659",NA,NA,NA,NA,NA,NA,0.021,0.021,NA,NA,NA,NA,NA,NA
-Luapula,53240,Copper,Zambia,-11.572990,29.283300,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Large Copper Tailings Resources,85185,Copper,Zambia,-14.463220,28.431270,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Konkola Deep,27740,Copper,Zambia,-12.379780,27.827590,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Konkola,29352,Copper,Zambia,-12.380060,27.827950,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Kitwe Nkana Tailings Retreatment,76939,Copper,Zambia,-12.842220,28.170000,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Kaxixi,88323,Copper,Zambia,-15.204230,28.654880,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Kasempa,49812,Copper,Zambia,-13.342500,26.356667,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Kansanshi SX-EW,75983,Copper,Zambia,-12.098000,26.433000,Copper,,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Kansanshi,26668,Copper,Zambia,-12.095390,26.429340,Copper,Gold,,"28,151,000","29,134,000","202,159","221,487",NA,NA,NA,NA,"128,199","128,409",NA,NA,NA,NA,NA,NA,NA,NA
-Kabwe Tailings,36675,Lead,Zambia,-14.459730,28.433200,Lead,Zinc,Vanadium,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Ichimpe,39252,Copper,Zambia,-12.748320,28.138240,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Hebei Jidong,37833,Copper,Zambia,-15.416440,28.283300,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Emmanuel,62213,Manganese,Zambia,-14.455000,28.547000,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Cu and Co Tailings,85700,Copper,Zambia,-14.459900,28.431010,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Collum,38354,Coal,Zambia,-17.156940,27.364440,Coal,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Chumbwe,27157,Gold,Zambia,-15.616110,28.821110,Gold,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Chilembwe,59823,Phosphate,Zambia,-13.980000,31.680000,Phosphate,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Chibuluma South,31323,Copper,Zambia,-12.913060,28.080280,Copper,Cobalt,,"188,916",NA,"3,051","8,023",NA,NA,NA,NA,NA,NA,1.900,NA,NA,NA,NA,NA,NA,NA
-Chambishi West,36116,Copper,Zambia,-12.651980,28.041870,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Chambishi SXEW,85074,Copper,Zambia,-12.650510,28.044160,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Chambishi,28268,Copper,Zambia,-12.658890,28.044720,Copper,Cobalt,,NA,NA,"66,005","40,163",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-Baluba,28272,Copper,Zambia,-13.048610,28.338060,Copper,Cobalt,,NA,NA,"13,836","13,612",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+(g/tonne)"
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Trident - Sentinel,36127,Copper,Zambia,-12.23238,25.14786,Copper,Cobalt,Nickel,"56,329,000","56,589,000","232,688","251,216",NA,NA,NA,NA,NA,NA,0.47,0.49,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Trident - Enterprise,76924,Nickel,Zambia,-12.1924,25.21357,Nickel,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Nkana SX-EW,76074,Copper,Zambia,-12.85164,28.20713,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Nkana Slag,29191,Cobalt,Zambia,-12.83944,28.21028,Cobalt,Copper,Gold,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Nkana,28270,Copper,Zambia,-12.83194,28.19778,Copper,Cobalt,,NA,NA,"55,068","17,900",NA,NA,NA,NA,NA,NA,1.6,1.85,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Nchanga SX-EW,76095,Copper,Zambia,-12.53498,27.84684,Copper,Cobalt,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Nchanga,28264,Copper,Zambia,-12.51308,27.85752,Copper,Cobalt,Iron Ore,"2,820,706","2,820,706","65,544","65,544",NA,NA,"1,252","1,252",NA,NA,0.782,0.782,NA,NA,0.12,0.12,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mwinilunga,68283,Copper,Zambia,-11.86,24.41,Copper,Cobalt,Gold,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mwinilunga,32578,Copper,Zambia,-11.508611,24.28454,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mwambashi,33810,Copper,Zambia,-12.722,27.968,Copper,Cobalt,,NA,NA,"9,127","9,116",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mushiba,36066,Copper,Zambia,-13.060915,28.245237,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Munali,27453,Nickel,Zambia,-15.92333,28.13444,Nickel,Copper,Cobalt,"175,000","312,500",NA,NA,"1,400","2,500",NA,NA,NA,NA,NA,NA,1,1,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Muliashi North,30969,Copper,Zambia,-13.06861,28.32583,Copper,Cobalt,,NA,NA,"43,391","43,000",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mufulira SX-EW,76075,Copper,Zambia,-12.53475,28.2334,Copper,,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mufulira,28269,Copper,Zambia,-12.53417,28.23889,Copper,Cobalt,,"1,440,000",NA,"30,551","82,500",NA,NA,NA,NA,NA,NA,2.357,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mkushi,60679,Manganese,Zambia,-13.459,29.68,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mkushi,30495,Copper,Zambia,-13.93222,29.15844,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Mimbula,35948,Copper,Zambia,-12.62995,27.86133,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Maybach,76265,Manganese,Zambia,-14.13,29.77333,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Maamba Collieries Ltd,40999,Coal,Zambia,-17.34935,27.18414,Coal,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Lumwana,28868,Copper,Zambia,-12.23622,25.82228,Copper,Gold,Cobalt,NA,"25,290,000","109,769","125,191",NA,NA,NA,NA,NA,NA,NA,0.52,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Lubambe,28837,Copper,Zambia,-12.29917,27.76806,Copper,Cobalt,,"2,654,100","2,520,000","45,584","43,659",NA,NA,NA,NA,NA,NA,0.021,0.021,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Luapula,53240,Copper,Zambia,-11.57299,29.2833,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Large Copper Tailings Resources,85185,Copper,Zambia,-14.46322,28.43127,Copper,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Konkola Deep,27740,Copper,Zambia,-12.37978,27.82759,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Konkola,29352,Copper,Zambia,-12.38006,27.82795,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kitwe Nkana Tailings Retreatment,76939,Copper,Zambia,-12.84222,28.17,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kaxixi,88323,Copper,Zambia,-15.20423,28.65488,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kasempa,49812,Copper,Zambia,-13.3425,26.356667,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kansanshi SX-EW,75983,Copper,Zambia,-12.098,26.433,Copper,,,NA,NA,0,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kansanshi,26668,Copper,Zambia,-12.09539,26.42934,Copper,Gold,,"28,151,000","29,134,000","202,159","221,487",NA,NA,NA,NA,"128,199","128,409",NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Kabwe Tailings,36675,Lead,Zambia,-14.45973,28.4332,Lead,Zinc,Vanadium,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Ichimpe,39252,Copper,Zambia,-12.74832,28.13824,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Hebei Jidong,37833,Copper,Zambia,-15.41644,28.2833,Copper,Gold,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Emmanuel,62213,Manganese,Zambia,-14.455,28.547,Manganese,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Cu and Co Tailings,85700,Copper,Zambia,-14.4599,28.43101,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Collum,38354,Coal,Zambia,-17.15694,27.36444,Coal,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chumbwe,27157,Gold,Zambia,-15.61611,28.82111,Gold,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chilembwe,59823,Phosphate,Zambia,-13.98,31.68,Phosphate,,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chibuluma South,31323,Copper,Zambia,-12.91306,28.08028,Copper,Cobalt,,"188,916",NA,"3,051","8,023",NA,NA,NA,NA,NA,NA,1.9,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chambishi West,36116,Copper,Zambia,-12.65198,28.04187,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chambishi SXEW,85074,Copper,Zambia,-12.65051,28.04416,Copper,Cobalt,,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Chambishi,28268,Copper,Zambia,-12.65889,28.04472,Copper,Cobalt,,NA,NA,"66,005","40,163",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+Baluba,28272,Copper,Zambia,-13.04861,28.33806,Copper,Cobalt,,NA,NA,"13,836","13,612",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
