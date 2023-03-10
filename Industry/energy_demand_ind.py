@@ -25,7 +25,7 @@ def lon2x(a):
 # Read in locations of mines from csv file
 mine_data = read_csv(data_folder + filename, header=0, thousands=',')
 mine_data = mine_data[~mine_data['Property ID'].isnull()]
-location = np.array(mine_data[['X', 'Y']])
+location = np.array(mine_data[['Y', 'X']])
 
 # Put the relevant data in a source dictionary which the plot will read from
 mine_data_dict = dict(

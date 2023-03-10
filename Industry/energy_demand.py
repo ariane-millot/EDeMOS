@@ -22,7 +22,7 @@ def lon2x(a):
 
 
 # Read in locations of mines from csv file
-mine_data = read_csv(data_folder + 'mines_zambia.csv', header=3, thousands=',')
+mine_data = read_csv(data_folder + 'mines_zambia.csv', header=6, thousands=',')
 location = np.array(mine_data[['Latitude (degrees)', 'Longitude (degrees)']])
 
 # Put the relevant data in a source dictionary which the plot will read from
