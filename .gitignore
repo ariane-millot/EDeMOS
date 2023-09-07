@@ -5,3 +5,7 @@ PlanetData
 .idea
 **/.ipynb_checkpoint**
 __pycache__/utils.cpython-38.pyc
+Residential/cache
+Residential/__pycache__
+Industry/Data/UN stats
+Industry/Data/USGS survey
