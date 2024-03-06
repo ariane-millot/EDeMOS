@@ -12,7 +12,7 @@ import os
 import numpy as np
 from copy import copy
 
-def calc_energy_per_site(path_data, path_mines, input_table):
+def calc_energy_per_site(path_mines, input_table):
 
     country = "Zambia"
     material = "Cu"
@@ -56,9 +56,10 @@ def calc_energy_per_site(path_data, path_mines, input_table):
     
     output_table = input_table[["Country", "FeatureNam", "DsgAttr03", "DsgAttr06", "MemoOther", "MemoLoc","Latitude", "Longitude", "DsgAttr07"]].copy()
     
+    # Create a list of all possible outputs and allocate Metal or Ore and concentrate to each process
     # clear output type
     output_type_list = []
-    for idx, output_name in enumerate(input_table["DsgAttr03"]):
+    for idx, output_name in enumerate(input_table["DsgAttr03"]): # go through all commodity products
         if output_name not in ["Metal", "Ore and concentrate"]:
             if material+" content" in output_name:
                 output_name = "Metal"
@@ -68,7 +69,8 @@ def calc_energy_per_site(path_data, path_mines, input_table):
                 output_name = ""
         output_type_list.append(output_name)
     output_table["Output type (ass.)"] = output_type_list
-    
+
+    # Assess production level for each site
     # clear production
     production_2017 = []
     for idx, production in enumerate(input_table["DsgAttr07"]):
@@ -87,11 +89,11 @@ def calc_energy_per_site(path_data, path_mines, input_table):
     
 
     
-    # Production of copper content
+    # Production of copper content in kt
     metal_content_list = []
     for idx, production in enumerate(output_table["Production (ass.) 2017 [t]"]):
         if output_table["Output type (ass.)"][idx]=="Ore and concentrate":
-            metal_content_list.append(production*ore_grade/1000)
+            metal_content_list.append(production*ore_grade/1000) # conversion in ktCu
         else:
             metal_content_list.append(production/1000)
     output_table["Cu content [kt]"] = metal_content_list
