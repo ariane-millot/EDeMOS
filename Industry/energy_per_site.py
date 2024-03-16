@@ -11,8 +11,10 @@ import pandas as pd
 import os
 import numpy as np
 from copy import copy
+import geopandas as gpd
+import fiona
 
-def calc_energy_per_site(path_mines, input_table):
+def calc_energy_per_site(path_mines, input_table, display_name):
 
     country = "Zambia"
     material = "Cu"
@@ -162,7 +164,18 @@ def calc_energy_per_site(path_mines, input_table):
     # calculate consumed energy:  multiply production and specific energy consumption
     for en_carrier in spec_energy.keys():
         output_table["Energy " + en_carrier +" [TJ]"] = np.array(output_table["Production (ass.) 2017 [t]"])*np.array(output_table["Spec energy "+en_carrier+" [GJ/t]"])/1000
-            
-    output_table.to_csv(os.path.join(path_mines, "Energy_demands_ind_sites.csv"), encoding='utf-8', index=False)
+     
+    ## Adding a uid which is needed afterwards
+    output_table["id"] = range(1, len(output_table)+1)
+    
+    ## Export to csv
+    output_table.to_csv(os.path.join(path_mines, display_name + ".csv"), encoding='utf-8', index=False)
+    
+    ## Converting df to gdf for further processing & extracting gpkg
+    output_table_gdf = gpd.GeoDataFrame(output_table,
+                                        geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs={'init': 'epsg:4326'})
+    
+    output_table_gdf.to_file(os.path.join(path_mines, ((display_name + ".gpkg"))), 
+                                          layer=display_name, driver="GPKG")
     #output_table.to_excel(result, sheet_name=country, index=False, startrow=0)
     #result.close()
