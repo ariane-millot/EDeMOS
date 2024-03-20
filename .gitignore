@@ -9,5 +9,7 @@ Residential/cache
 Residential/__pycache__
 Industry/Data/UN stats
 Industry/Data/USGS survey
+Industry/Data/Archives
+Industry/Archives
 data.csv
 admin/gadm41_ZMB_shp
