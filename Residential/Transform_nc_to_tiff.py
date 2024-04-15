@@ -17,17 +17,21 @@ def nc_to_tif(nc_file, base_tif_file):
     for band in range(1, num_bands + 1):
       # Get data from the current band
       data = src.read(band)
-
+      print(data)
       # Get geotransform information (coordinates)
       transform = src.transform
+      print(transform)
 
       # Get information about the data type
       dtype = src.dtypes[band - 1]
       print(dtype)
 
       # Get CRS (coordinate reference system) if available
-      crs = src.crs
+      # crs = src.crs
+      # Specify WGS84 CRS since it's not available in the NetCDF file
+      crs = 'EPSG:4326'  # WGS84
       print(crs)
+
       # Create filename for the band's TIFF
       tif_file = f"{base_tif_file}_band{band}.tif"
 
