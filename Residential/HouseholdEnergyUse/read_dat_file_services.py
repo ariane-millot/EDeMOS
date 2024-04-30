@@ -1,42 +1,26 @@
 from pandas import read_fwf
 import numpy as np
+import pandas as pd
 
 # This script reads data files from the DHS survey
 # https://dhsprogram.com/data/dataset/Zambia_Standard-DHS_2018.cfm
 # and then outputs selected columns to a csv file
 
 # Folder where data files are located
-data_folder = '../Data/DHSSurvey/ZMIR71FL/'
+data_folder = '../Data/DHSSurvey/ZMHR71FL/ZMHR71DT'
 
 # Choose the file prefix.
-filename = 'ZMIR71FL'
+filename = 'ZMHR71FL'
 
-# N is the number of columns in the file.
-# This currently needs to be found before running this script by inspecting the files in a text editor
-N = 4000
+df = pd.read_stata(data_folder + "/" + filename + '.DTA')
 
-# Read the .DCT file which specifies which characters of the .DAT file encode which columns
-# replace - with 3 spaces in the .dct file before running the code
-dct = read_fwf(data_folder+filename+'.DCT', skiprows=2, header=None, nrows=N)
-print('Read .dct file: shape =', dct.shape)
-# Read the names of the columns from the .DO file
-do = read_fwf(data_folder+filename+'.DO', skiprows=2, header=None, nrows=N)
-print('Read .do file: shape =', do.shape)
+# Read the names of the columns from the .DO file and convert to dictionary
+do = read_fwf(data_folder + "\\" + filename+'.DO', skiprows=2, header=None, sep = "")
+col_dict = dict(zip(do[2], do[3]))
 
-# Append the column names to the character positions
-dct = dct.merge(do, left_on=1, right_on=2, how='left')
-
-# Make array of column names
-cols = np.array(dct[dct.columns[[4, 5]]])
-
-# Reduce the character positions by 1 because python starts counting from 0 (not from 1).
-cols[:, 0]-=1
-
-# Now read .DAT file containing encoded data
-data = read_fwf(data_folder+filename+'.DAT',header=None, colspecs=list(map(tuple,cols)))
-
-# Get rid of any duplicated quotation marks in column names
-data.columns = np.char.strip(dct.iloc[:,-1].to_numpy(str),'"')
+df = df.rename(columns=col_dict)
+df.head(2)
+df.columns.shape[0]
 
 # List of useful columns for this project
 cols_required = ["Sample strata for sampling errors",
