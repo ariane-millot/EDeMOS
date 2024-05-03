@@ -82,4 +82,4 @@ def compute_energy_perhh_DHS(elas=2, data_folder='../Data/DHSSurvey/'):
 
 
 if __name__ == "__main__":
-    appliance_energy()
+    compute_energy_perhh_DHS()
