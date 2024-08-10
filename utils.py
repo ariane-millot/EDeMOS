@@ -56,7 +56,7 @@ def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, s
         points_proj[column] = points_proj[column].astype(float)     ## added so that the sample mining productions works; you may need to update this as per layer used
     
     gdf_points = points_proj[[column, "geometry"]]
-    pointsInPolygon = gpd.sjoin(gdf_points, clusters, how="inner", op='within')
+    pointsInPolygon = gpd.sjoin(gdf_points, clusters, how="inner", predicate='within')
     ## Defining operation on the selected data
     if val=="sum":
         group_by_name = pointsInPolygon[["id", column]].groupby(["id"]).sum().reset_index()
