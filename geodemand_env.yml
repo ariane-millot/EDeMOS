@@ -24,4 +24,6 @@ dependencies:
     - rasterio
     - geojson
     - h3
+    - h3pandas
+    - matplotlib-scalebar
 prefix: C:\Users\amillot\anaconda3\envs\geospatial_env_kepler
