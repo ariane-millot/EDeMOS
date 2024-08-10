@@ -2,6 +2,7 @@ from pandas import read_csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
 
 from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
 
@@ -159,6 +160,7 @@ for i in range(2):
             axk.text(xk, yk, '  Real groups of households from map', va='center')
 
         outfile = f'household_groups_{region_type[i].lower()}_withweight_elas{elas}_woWorldpopData.png'
+        pathlib.Path(figures_folder).mkdir(exist_ok=True)
         plt.savefig(figures_folder + outfile)
         print('Created ' + outfile)
         plt.show()
