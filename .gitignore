@@ -1,5 +1,3 @@
-Residential/Code/cache
-Residential/Data
 Outputs
 PlanetData
 .idea
@@ -7,9 +5,13 @@ PlanetData
 *.pyc
 Residential/cache
 Residential/__pycache__
+Residential/Code/cache
+Residential/Data
+Residential/Figure
 Industry/Data/UN stats
 Industry/Data/USGS survey
 Industry/Data/Archives
 Industry/Archives
-data.csv
+admin/gadm41_ZMB_1.shp
 admin/gadm41_ZMB_shp
+Grid
