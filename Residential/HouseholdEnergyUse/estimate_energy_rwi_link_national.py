@@ -40,7 +40,7 @@ letters = ['(a)', '(b)']
 
 hh_cells_results_available = True  # Change to False if this is the first run of the analysis
 if hh_cells_results_available is True:
-    infile = '../../data.csv'  # Read file containing the estimated mean wealth index ("rwi") of each hexagon on map
+    infile = '../../Outputs/data.csv'  # Read file containing the mean wealth index ("rwi") of each hexagon on map
     data_hh = read_csv(infile)
     N = data_hh.shape[0]
     # print(N)
@@ -109,7 +109,7 @@ for i in range(2):
         # First subplot
         # Plots a weighted density histogram of rwi DHS values for survey households.
         ax1.hist(rwi_DHS, bins=bx, weights=w/w.sum()*100, density=False, edgecolor=palette[0],
-                 facecolor='None', label='Survey households')
+                 facecolor='None', label='DHS households')
         # sns.kdeplot(x=rwi_DHS, weights=w/w.sum()*100, color=palette[0], ax=ax1, label='Survey households')
         ax1.set_xlim(xl)
         ax1.set_xticks([])
@@ -125,7 +125,7 @@ for i in range(2):
                 print(min_rwi, max_rwi)
                 xl = np.array([min_rwi, max_rwi])  # Limits for x-axis of plots (wealth index)
                 ax1.set_xlim(xl)
-            # Plots a density histogram of rwi values for our dataset with orange shading.
+            # Plots a density histogram of rwi values for our dataset
             ax1.hist(data_hh['rwi'][include],
                      bins=bx, weights=data_hh[column_name][include]/data_hh[column_name][include].sum()*100,
                      density=False, edgecolor=palette[4], facecolor='None', label='Dataset households')
@@ -138,23 +138,26 @@ for i in range(2):
         ax2.set_xlim(xl)
         # ax2.set_ylim(yl)
         scaling = 3
-        # Plots a scatter plot of rwi vs. energy use for survey households from DHS data with light green dot
-        ax2.scatter(rwi_DHS, eu, s=w*5*scaling, alpha=al, c=[palette[0]], edgecolors='None', label='Survey households')
+        # Plots a scatter plot of rwi vs. energy use for survey households from DHS data
+        ax2.scatter(rwi_DHS, eu, s=w*5*scaling, alpha=al, c=[palette[0]], edgecolors='None', label='DHS households')
         ax2.text(xl[0], yl[-1], '\n  ', va='top')
         # # Add the average rwi vs energy use for the region
         # ax2.plot(rwi_DHS.mean(), eu.mean(), '+', color=palette[2], ms=20)
-        ax2.set_ylabel('Household annual\nenergy consumption (kWh)')
+        ax2.set_ylabel('Household annual\nelectricity consumption (kWh)')
         ax2.set_xlabel('Wealth index')
 
         # Scatter plot of national values
         ax2.plot(rwi_group, eu_group, '-', color='grey', alpha=0.3)
         # Scatter plot of group values
-        ax2.scatter(rwi_group, eu_group, s=w_group*10*scaling, marker='d', alpha=al*2, c='None', edgecolors=palette[1], label='Artificial groups of survey households')
+        ax2.scatter(rwi_group, eu_group, s=w_group*10*scaling, marker='d', alpha=al*2, c='None', edgecolors=palette[1],
+                    label='Artificial groups of DHS households')
         ax2.get_yaxis().set_major_formatter(
             matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
         if hh_cells_results_available is True:
-            # Scatter plot of rwi values for our dataset vs energy demand for subregions with orange dots
-            ax2.scatter(data_hh['rwi'][include], energy_demand[i, include], s=5*scaling, alpha=al, marker='o', c=[palette[4]],
+            # Scatter plot of rwi values for our dataset vs energy demand
+            ax2.scatter(data_hh['rwi'][include], energy_demand[i, include],
+                        s=data_hh[column_name][include]/data_hh[column_name][include].sum()*100*10*scaling, alpha=al,
+                        marker='o', c=[palette[4]],
                         edgecolors=palette[4], label='Dataset households')
         ax2.legend()
 
