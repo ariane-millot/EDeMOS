@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas=2, data_folder='../Data/DHSSurvey/'):
+def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
 
     # Read-in the data on appliances and energy tiers
     data_apps = read_csv(data_folder + './appliance_energy_use.csv', header=1)
@@ -62,7 +62,7 @@ def compute_energy_perhh_DHS(elas=2, data_folder='../Data/DHSSurvey/'):
                     * (1 + elas * (rwi[in_tier]/rwi_average_tier))
             )
             # remove negative values
-            energy_use_elas = np.clip(energy_use_elas, a_min=0, a_max=None)
+            energy_use_elas = np.clip(energy_use_elas, a_min=8, a_max=None)
 
             # The first pass through this section allocates all houses with tier 1 consumption
             # the second overwrites the houses with tier 2 appliances using tier 2 consumption levels
