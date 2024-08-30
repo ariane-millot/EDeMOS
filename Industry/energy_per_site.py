@@ -26,8 +26,8 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     #----------------------------------
     # settings
     ## general
-    plant_usage_ore = {"Copper": 0.95, "Cobalt":0, "Gold":0.853, "Nickel":0.285, "Manganese":0.942} # Co from mining not considered
-    plant_usage_metal = {"Copper":  0.414, "Cobalt":0.136, "Gold":0.853, "Nickel":0, "Manganese":0.942} # no Ni metal production, no Au metal statistics, Mn ore and fero- or siliconmanganese statistics
+    plant_usage_ore = {"Copper": 0.773, "Cobalt":0, "Gold":0.853, "Nickel":0.285, "Manganese":0.942} # Co from mining not considered
+    plant_usage_metal = {"Copper":  0.312, "Cobalt":0.136, "Gold":0.853, "Nickel":0, "Manganese":0.942} # no Ni metal production, no Au metal statistics, Mn ore and fero- or siliconmanganese statistics
     ore_grade = {"Copper":0.0103, "Cobalt":0} # cobalt from mining not considered
     concentrate_grade = 0.3
     unit_conversion = {"Thousand metric tons":10**3, "Metric tons":1, "Kilograms":10**-3} # into t
