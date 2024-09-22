@@ -13,8 +13,8 @@ import pandas as pd
 def processing_raster(name, method, clusters, filepath=None):
     if filepath is None:
         messagebox.showinfo('Demand Mapping', 'Select the ' + name + ' map')
-        filepath = filedialog.askopenfilename(filetypes = (("rasters","*.tif"),("all files","*.*")))
-    raster=rasterio.open(filepath)
+        filepath = filedialog.askopenfilename(filetypes=(("rasters", "*.tif"), ("all files", "*.*")))
+    raster = rasterio.open(filepath)
     
     clusters = zonal_stats(
         clusters,
