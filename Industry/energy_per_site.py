@@ -97,8 +97,8 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     spec_energy["Nickel"]["Elec"]["Smelting/Refining"]= 200 # Asuming total energy = elec
     spec_energy["Nickel"]["Diesel"]["Smelting/Refining"]= 0
     
-    spec_energy["Manganese"]["Elec"]["Smelting/Refining"]= 9.26
-    spec_energy["Manganese"]["Diesel"]["Smelting/Refining"]= 27.63
+    spec_energy["Manganese"]["Elec"]["Smelting/Refining"]= 18.01
+    spec_energy["Manganese"]["Diesel"]["Smelting/Refining"]= 13.02
     
     #-----------------------------------
     
