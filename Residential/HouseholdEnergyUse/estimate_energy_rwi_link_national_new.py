@@ -13,7 +13,6 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 
     make_figure = True
 
-    elas = 0.35  # choose elasticity value for the country
     recalculate_energy_perhh = False
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
@@ -24,14 +23,12 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 
     wealth_index = 1e-5 * dataDHS["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
     weight = 1e-6 * dataDHS['Household sample weight (6 decimals)'].to_numpy(float)
-    energy_use = dataDHS["Energy Use Elasticity"].to_numpy(float)  # Choose if assessed energy with elas is used or not
-    # energy_use = dataDHS["Energy Use"].to_numpy(float)
+    energy_use = dataDHS["Energy Use"].to_numpy(float)
     province = dataDHS['Province'].to_numpy(int)
 
     region_type = ['urban', 'rural']
 
     N = grid.shape[0]
-    # print(N)
     energy_demand = np.zeros((2, N))  # Array to save energy demand estimates
     rwi_simulated_group = np.zeros((2, N))
 
@@ -49,14 +46,14 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
     yl = np.array([0, np.max(energy_use)])  # Limits for y-axis on scatter plots (energy use)
     hmax = 25 # Limit for histogram y-axes
 
-    labels = ['DHS individual households',
+    labels = ['DHS survey individual households',
               'Groups of households inferred from map data',
               'Groups simluated from DHS households\nto match wealth index of map groups']
 
     recalculate_energies = True
 
     group_sigma = 1 # in units of rwi
-    group_size = 100 # Simluating true group size would be huge computational burden not alter the results
+    group_size = 100 # Simluating true group size would be a computational burden and not alter the results
 
     for i in range(2):
 
@@ -69,20 +66,8 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
         eu = energy_use[in_region_type]
         w = weight[in_region_type]
 
-        if recalculate_energies: # or not (hh_cells_results_available):
+        if recalculate_energies:
 
-            # # Create Nb groups of points with ascending average rwi
-            Nb = 20  # Number of artificial groups used to map group wealth index to group energy use
-            group = np.zeros((Nb, group_size), dtype=int)
-            rwi = np.linspace(min_wealth,max_wealth,Nb)
-            for k in range(Nb):
-                p = norm.pdf(rwi_DHS,rwi[k],group_sigma)
-                group[k, :] = np.random.choice(Nh,group_size,p=p/sum(p))
-            # Calculation average rwi, average energy use for each group
-            rwi_group = np.nanmean(rwi_DHS[group],axis=1)
-            eu_group = np.nanmean(eu[group],axis=1)
-
-            # if hh_cells_results_available:
             # Create filter to identify map regions (hexagons) of the relevant type and province
             include = np.flatnonzero((grid[column_name] > 0))
 
@@ -104,10 +89,10 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
             grid['Energy demand '+region_type[i].lower()] = energy_demand[i,:]
             grid['Simulated group rwi '+region_type[i].lower()] = rwi_simulated_group[i,:]
 
-        # elif hh_cells_results_available:
-        #     include = np.flatnonzero((grid[column_name] > 0))
-        #     eu_group = grid['Energy demand '+region_type[i].lower()][include]
-        #     rwi_group = grid['Simulated group rwi '+region_type[i].lower()][include]
+        else:
+            include = np.flatnonzero((grid[column_name] > 0))
+            eu_group = grid['Energy demand '+region_type[i].lower()][include]
+            rwi_group = grid['Simulated group rwi '+region_type[i].lower()][include]
 
         if make_figure:
             palette = sns.color_palette()
@@ -158,10 +143,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                 matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
             ax2.legend(loc='upper left')
 
-            # if hh_cells_results_available is True:
-            outfile = f'household_groups_{region_type[i].lower()}_withweight_elas{elas}_withWorldpopData_newvalues.png'
-            # else:
-            #     outfile = f'household_groups_{region_type[i].lower()}_withweight_elas{elas}_woWorldpopData_newvalues.png'
+            outfile = f'household_groups_{region_type[i].lower()}.png'
             pathlib.Path(figures_folder).mkdir(exist_ok=True)
             fig.suptitle(f'{letters[i]} {region_type[i].capitalize()}')
             plt.tight_layout()
