@@ -67,7 +67,17 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
         w = weight[in_region_type]
 
         if recalculate_energies:
-
+            # Create Nb groups of points with ascending average rwi to get approximate rwi-E mapping
+            Nb = 20  # Number of artifical groups used to map group wealth index to group energy use
+            group = np.zeros((Nb, group_size), dtype=int)
+            rwi = np.linspace(min_wealth,6,Nb)
+            for k in range(Nb):
+                p = norm.pdf(rwi_DHS,rwi[k],group_sigma)
+                group[k, :] = np.random.choice(Nh,group_size,p=p/sum(p))
+            # Calculation average rwi, average energy use for each group
+            rwi_group = np.nanmean(rwi_DHS[group],axis=1)
+            eu_group = np.nanmean(eu[group],axis=1)
+            
             # Create filter to identify map regions (hexagons) of the relevant type and province
             include = np.flatnonzero((grid[column_name] > 0))
 
