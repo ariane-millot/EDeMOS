@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
+def compute_energy_perhh_DHS(elas = 0.4,nominal_household_size = 4,data_folder='../Data/DHSSurvey/'):
 
     # Read-in the data on appliances and energy tiers
     data_apps = read_csv(data_folder + './appliance_energy_use.csv', header=1)
@@ -20,10 +20,10 @@ def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
     print('Read data on', Nh, 'survey households')
     # Read columns into 2d array on appliance usage
     appliance_use = data[appliance].to_numpy(int)
+    household_size = data['Number of household members']
 
     # Create array ready to store energy use estimates
     energy_use = np.zeros(Nh)
-    energy_use_elas = np.zeros(Nh)
 
     # Create array to give the mapping between appliance usage and tier
     tier = np.array([0, 0, 0, 1, 2, 2, 3, 4])
@@ -33,10 +33,6 @@ def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
 
     # set counter to follow tiers in loop below
     t = -1
-
-    # define elasticity for en cons.
-    rwi_col = 'Wealth index factor score for urban/rural (5 decimals)'
-    rwi = 1e-5 * data[rwi_col].to_numpy(float)
 
     print('Estimating average energy use per household...')
     for i in range(tier.size):
@@ -51,19 +47,6 @@ def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
             # energy_use[in_tier] = np.sum(appliance_use[in_tier, :] * energy_cons[:, tier[i]], axis=1)
             energy_use[in_tier] = appliance_use[in_tier, :] @ energy_cons[:, tier[i]]
 
-            # Estimate energy use for each household by multiplying each appliance they use
-            # by the energy consumption of that appliance relevant to the tier they're in
-            # and taking into account an elasticity factor
-            # find the average rwi for all HH in the tier
-            rwi_average_tier = rwi[in_tier].mean()
-            # assess the energy consumption
-            energy_use_elas[in_tier] = (
-                    appliance_use[in_tier, :] @ energy_cons[:, tier[i]]
-                    * (1 + elas * (rwi[in_tier]/rwi_average_tier))
-            )
-            # remove negative values
-            energy_use_elas = np.clip(energy_use_elas, a_min=8, a_max=None)
-
             # The first pass through this section allocates all houses with tier 1 consumption
             # the second overwrites the houses with tier 2 appliances using tier 2 consumption levels
             # etc. up to tier 5
@@ -74,9 +57,10 @@ def compute_energy_perhh_DHS(elas=1, data_folder='../Data/DHSSurvey/'):
 
             t = tier[i]
 
+    energy_use = energy_use*(household_size/nominal_household_size)**elas
+
     # Write or overwrite column in data file with estimated energy use values
     data['Energy Use'] = energy_use
-    data['Energy Use Elasticity'] = energy_use_elas
     data.to_csv(infile, index=None)
     print('Written energy use estimates to', infile)
 
