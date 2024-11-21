@@ -16,7 +16,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
     recalculate_energy_perhh = False
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
-        compute_energy_perhh_DHS(elas=elas)  # Run the script to assess energy consumption of households in the DHS dataset
+        compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
 
     infile = data_folder + 'household_data.csv'  # Read file containing data from DHS survey of households
     dataDHS = read_csv(infile)
