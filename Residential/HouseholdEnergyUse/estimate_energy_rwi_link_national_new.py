@@ -5,6 +5,7 @@ import pathlib
 import seaborn as sns
 from scipy.stats import norm
 from scipy.interpolate import griddata
+from scipy.optimize import curve_fit
 
 # Define probability distribution for selection of simulated subgroups of households from survey
 def selection_window(x,x0,s,c):
@@ -13,17 +14,26 @@ def selection_window(x,x0,s,c):
     p = p/sum(p)
     return p
 
+# Define fitting function to characterise rwi-f_elec-energy relationship - only used if simulate_cell_groups=False
+def logistic(x,a,b,x0):
+    # Note that "x" is 2D, containing both the rwi values and f_elec (access rate) values 
+    return x[1]*a/(1+b*np.exp(-(x[0]-x0)))
+np.random.seed(42)
+
 def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
     np.random.seed(42)
 
+    # To produce graphs of the simulated cell groups, set simulate_cell_groups = True
+    # To produce graphs showing the fitting function, set simulate_cell_groups = False and recalculate_energies = True
+    
     make_figure = True
     recalculate_energies = True # If false will just use any existing value in grid data
-    simulate_cell_groups = True  # Setting to False will set cell energies by interpolation
+    simulate_cell_groups = True  # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
     recalculate_energy_perhh = False
 
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
-        compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
+        compute_energy_perhh_DHS(elas=elas)  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
     infile_DHS = data_folder + 'household_data.csv'  
@@ -32,6 +42,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
     if make_figure:
         min_wealth = wealth_index.min()
         max_wealth = wealth_index.max()
+        xl = np.array([min_wealth,max_wealth])  # Limits for x-axis of plots (wealth index)
         yl = np.array([0, dataDHS_all["Energy Use"].max()])  # Limits for y-axis on scatter plots (energy use)
             
     region_type = ['urban', 'rural']
@@ -48,6 +59,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
         # Create Nb groups of points with ascending average rwi to get approximate rwi-E mapping
         Nb = 20  # Number of bins in wealth index
         Na = 20 # Number of bins in access rate
+        x = np.arange(xl[0],xl[1],0.1) # array to plot fitting function (if needed)
 
     for i in range(2):
 
@@ -126,6 +138,11 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                                                     eu_group.flatten(),
                                                     np.stack((rwi_grid,f_elec),axis=1),
                                                     method='nearest')
+                param = [ 4000,0.5,5]
+                try:
+                    param,cov = curve_fit(logistic,np.stack((rwi_group.flatten(),f_group.flatten())),eu_group.flatten(),p0 = param)
+                except RuntimeError:
+                    print('Unable to fit rwi vs eu')
             grid['Energy demand '+region_type[i].lower()] = energy_demand[i,:]
         else:
             eu_group = grid['Energy demand '+region_type[i].lower()][include]
@@ -142,7 +159,6 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
             show_access_rate = False # False will show energy use in the scatter panel
 
             # Set parameters
-            xl = np.array([min_wealth,max_wealth])  # Limits for x-axis of plots (wealth index)
             bx = np.arange(xl[0], xl[1], 0.15)  # Bins for histograms on x-axis
             al = 0.3  # Alpha value for points in figures
             letters = ['(a)', '(b)']
@@ -153,6 +169,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                         'Simulated groups of survey households selected to\nmatch wealth index and access rate of each cell']
             legend_fontsize = 8
             palette = sns.color_palette()
+            suffix = '' # default suffix of figure png filename
 
             # Create figure
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8.5, 5),
@@ -185,6 +202,8 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                 ax1.hist(rwi_group,
                         bins=bx, weights=pct_households_in_group,histtype='bar',
                         density=False, edgecolor='None', facecolor=palette[1], label=labels[2],alpha=0.3)
+            elif recalculate_energies:
+                suffix = 'fit_'
             ax1.legend(fontsize=legend_fontsize)
 
             # Bottom scatter subplot, ax2
@@ -204,18 +223,37 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                 ax2.set_ylim(yl)
                 ax2.scatter(rwi_DHS, eu, s=w*15, alpha=al, c=[palette[0]], edgecolors='None', label=labels[0])
                 y_group = eu_group
+                if not(simulate_cell_groups):
+                    # Fit logistic function to simulated groups and plot
+                    label_fit = 'Logistic fit at given access rate'
+                    label_group = 'Simulated household groups with access rate = '
+                    if i == 0:
+                        j_fit = [0,-1]
+                    else:
+                        j_fit = np.arange(4,Na,4)
+                    k = 1
+                    for j in j_fit:
+                        fit = logistic(np.stack((x,x.size*[f[j]])),*param)
+                        ax2.plot(x,fit,'-',label=label_fit,alpha=0.7,color=palette[k])
+                        label_fit = ''
+                        ax2.scatter(rwi_group[j,:], y_group[j,:], marker='d', edgecolors='None',color=palette[k],
+                        label=label_group+'{:.2f}'.format(f[j]),alpha=0.7)
+                        label_group = label_group.replace('Simulated household groups with ','')
+                        k +=1
+                    legend_loc[0] = 'upper right'
             # Plot mean rwi and mean y value of the simulated groups
-            ax2.scatter(rwi_group, y_group, marker='d', alpha=al, c=[palette[1]], edgecolors='None',
+            if simulate_cell_groups:
+                ax2.scatter(rwi_group, y_group, marker='d', alpha=al, c=[palette[1]], edgecolors='None',
                         label=labels[2])
             ax2.legend(loc=legend_loc[i],fontsize=legend_fontsize)
 
-            outfile = 'rwi_vs_'+y_value+'_'+region_type[i].lower()+'.png'
+            outfile = 'rwi_vs_'+y_value+'_'+suffix+region_type[i].lower()+'.png'
             pathlib.Path(figures_folder).mkdir(exist_ok=True)
             fig.suptitle(f'{letters[i]} {region_type[i].capitalize()}')
             plt.tight_layout()
             plt.savefig(figures_folder + outfile, dpi=300)
             print('Created ' + outfile)
-            #plt.show()
+            plt.show()
             plt.close()
 
             # # Add the assessed energy use to the grid
