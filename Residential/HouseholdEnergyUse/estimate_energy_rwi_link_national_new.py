@@ -1,24 +1,30 @@
 from pandas import read_csv
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import pathlib
 import seaborn as sns
 from scipy.stats import norm
 from scipy.interpolate import griddata
 from scipy.optimize import curve_fit
 
+
 # Define probability distribution for selection of simulated subgroups of households from survey
-def selection_window(x,x0,s,c):
-    p = norm.pdf(x,loc=x0,scale=s)
-    p[x>x0+c*s]=0
+def selection_window(x, x0, s, c):
+    p = norm.pdf(x, loc=x0, scale=s)
+    p[x > x0+c*s] = 0
     p = p/sum(p)
     return p
 
+
 # Define fitting function to characterise rwi-f_elec-energy relationship - only used if simulate_cell_groups=False
-def logistic(x,a,b,x0):
+def logistic(x, a, b, x0):
     # Note that "x" is 2D, containing both the rwi values and f_elec (access rate) values 
     return x[1]*a/(1+b*np.exp(-(x[0]-x0)))
+
+
 np.random.seed(42)
+
 
 def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
     np.random.seed(42)
@@ -33,7 +39,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
-        compute_energy_perhh_DHS(elas=elas)  # Run the script to assess energy consumption of households in the DHS dataset
+        compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
     infile_DHS = data_folder + 'household_data.csv'  
@@ -55,7 +61,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 
         group_sigma = 1 # in units of rwi
         tail_cutoff = 4  # Number of standard deviations at which selection window is cropped - to allow cells with very low rwi to be matched 
-        group_size = 100 # Simluating true group size would be a computational burden and not alter the results
+        group_size = 100 # Simulating true group size would be a computational burden and not alter the results
         # Create Nb groups of points with ascending average rwi to get approximate rwi-E mapping
         Nb = 20  # Number of bins in wealth index
         Na = 20 # Number of bins in access rate
@@ -63,6 +69,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 
     for i in range(2):
 
+        # Data from DHS dataset
         dataDHS = dataDHS_all[dataDHS_all["Type of place of residence"] == i + 1]
         elec = dataDHS["Electricity"].to_numpy(int)
         # Find households with or without access
@@ -70,14 +77,16 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
         no_access = np.flatnonzero(elec==0)
         rwi_DHS = 1e-5 * dataDHS["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
         eu = dataDHS["Energy Use"].to_numpy(float)
-        
+
+        # Data from the grid
         col_HH = 'HH_' + region_type[i].lower()
         col_HH_access = 'HHwithAccess_' + region_type[i].lower()[:3]
         include = np.flatnonzero(grid[col_HH_access]>0)
         f_elec = grid[col_HH_access][include].to_numpy(float)/grid[col_HH][include].to_numpy(float)
         rwi_grid = grid['rwi'][include].to_numpy(float)
+
         if recalculate_energies:
-            # Select centers of selection probability distrubtion 
+            # Select centers of selection probability distribution
             # such that the lowest selection window just overlaps the grid mean rwi values
             rwi = np.linspace(np.ceil(rwi_DHS[has_access].min()*10)/10-tail_cutoff,
                             np.ceil(rwi_DHS[no_access].max()*10)/10+group_sigma,
@@ -110,7 +119,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                                                     np.array(Na*[rwi]).flatten(),
                                                     np.stack((rwi_grid,f_elec),axis=1),
                                                     method='nearest')
-                # Perpare array to store simluated groups of households for each cell
+                # Prepare array to store simulated groups of households for each cell
                 group = np.zeros((rwi_peak.size,group_size),dtype=int)
                 # Create subsamples of survey households
                 for k in range(rwi_peak.size):
@@ -121,7 +130,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                         np.random.choice(has_access,int(round(group_size*f_elec[k],0)),p=pa)
                     )
                 # Calculation average rwi, average energy use for each group
-                # Now these groups are the simluated groups that match the cell averages
+                # Now these groups are the simulated groups that match the cell averages
                 rwi_group = np.nanmean(rwi_DHS[group],axis=1)
                 eu_group = np.nanmean(eu[group],axis=1)
                 f_group = np.sum(elec[group],axis=1)/group_size
@@ -151,6 +160,8 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
         Etot = (grid['Energy demand '+region_type[i].lower()]*grid[col_HH]).sum()
         print(region_type[i]+' total = {:,.0f} GWh/year'.format(Etot*1e-6))
         print(region_type[i]+' average per houshold = {:,.0f} kWh/year'.format(Etot/grid[col_HH_access].sum()))
+        print(region_type[i] + ' min = {:,.0f} kWh/year'.format(grid['Energy demand '+region_type[i].lower()].min()) +
+              ' max = {:,.0f} kWh/year'.format(grid['Energy demand '+region_type[i].lower()].max()))
         
         if make_figure:
 
@@ -165,8 +176,8 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
             hmax = 25 # Limit for histogram y-axes
 
             labels = ['DHS survey individual households',
-                        'Groups of households inferred for each map cell',
-                        'Simulated groups of survey households selected to\nmatch wealth index and access rate of each cell']
+                        'Groups of households for each hexagon cell',
+                        'Simulated groups of survey households selected to\nmatch relative wealth index and access rate of each cell']
             legend_fontsize = 8
             palette = sns.color_palette()
             suffix = '' # default suffix of figure png filename
@@ -187,9 +198,9 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
             else:
                 ax1.set_xlim(xl)
             ax1.set_xticks([])
-            ax1.set_ylabel('Percentage\nof households')
+            ax1.set_ylabel('Percentage\nof households (%)')
 
-            # Plot a weighted density histogram of rwi DHS values for survey households.
+            # Plot a weighted density histogram of wi DHS values for survey households.
             w = 1e-6* dataDHS["Household sample weight (6 decimals)"].to_numpy(float)
             ax1.hist(rwi_DHS, bins=bx, weights=w/w.sum()*100, density=False, edgecolor=palette[0],
                         histtype='step',facecolor='None', label=labels[0])
@@ -222,6 +233,8 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                 ax2.set_ylabel('Household annual\nelectricity consumption (kWh)')
                 ax2.set_ylim(yl)
                 ax2.scatter(rwi_DHS, eu, s=w*15, alpha=al, c=[palette[0]], edgecolors='None', label=labels[0])
+                ax2.get_yaxis().set_major_formatter(
+                    matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
                 y_group = eu_group
                 if not(simulate_cell_groups):
                     # Fit logistic function to simulated groups and plot
@@ -263,7 +276,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
 if __name__ == "__main__":
     data_folder = '../Data/DHSSurvey/'
     figures_folder = '../Figures/'
-    infile = '../Outputs/' + 'data_res.csv'  # Read file containing the mean wealth index ("rwi") of each hexagon on map
+    infile = '../../Outputs/' + 'data_res.csv'  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
     grid = read_csv(infile)
 
     estimate_energy_rwi_link_national(grid, data_folder, figures_folder)
