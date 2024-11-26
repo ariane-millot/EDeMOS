@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas = 0.4,nominal_household_size = 4,data_folder='../Data/DHSSurvey/'):
+def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4, data_folder='../Data/DHSSurvey/'):
 
     # Read-in the data on appliances and energy tiers
     data_apps = read_csv(data_folder + './appliance_energy_use.csv', header=1)
