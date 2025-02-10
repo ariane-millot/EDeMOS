@@ -10,15 +10,13 @@ conda env create -f environment.yml
 
 ## Useful data sets
 
-1. Transmission lines 220 kV, 132 kV, others.
-[Kenya electricity network](https://energydata.info/dataset/kenya-kenya-electricity-network)
-2. Kenya Population and Housing Census 2019. [KNBS, 2019](https://open.africa/dataset/2019-kenya-population-and-housing-census).
-3. Demographic and Health Surveys (DHS). [DHS](https://dhsprogram.com/data/dataset/Kenya_Standard-DHS_2022.cfm)
-4. A high-resolution gridded dataset to assess electrification in sub-Saharan Africa [^1].
-5. Gridded global Gross Domestic Product and Human Development Index datasets over 1990–2015 [^2]. 
-6. High-Resolution Electricity Access. set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1) [^3].
-7. Relative Wealth Index (RWI) [^4].
-8. Gridded population estimates from building footprints [^5].
+1. Kenya Population and Housing Census 2019. [KNBS, 2019](https://open.africa/dataset/2019-kenya-population-and-housing-census).
+2. Demographic and Health Surveys (DHS). [DHS](https://dhsprogram.com/data/dataset/Kenya_Standard-DHS_2022.cfm)
+3. A high-resolution gridded dataset to assess electrification in sub-Saharan Africa [^1].
+4. Gridded global Gross Domestic Product and Human Development Index datasets over 1990–2015 [^2]. 
+5. High-Resolution Electricity Access. set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1) [^3].
+6. Relative Wealth Index (RWI) [^4].
+7. Gridded population estimates from building footprints [^5].
 
 ## Cite this work
 
