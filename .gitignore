@@ -9,9 +9,11 @@ Residential/Code/cache
 Residential/Data
 Residential/Figures
 Industry/Data/UN stats
+Industry/Data/mines
 Industry/Data/USGS survey
 Industry/Data/Archives
 Industry/Archives
 admin/gadm41_ZMB_1.shp
 admin/gadm41_ZMB_shp
 Grid
+convert_crs.py
