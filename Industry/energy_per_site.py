@@ -230,7 +230,21 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     
     # calculate consumed energy:  multiply production and specific energy consumption
     for en_carrier in spec_energy["Copper"].keys():
-        output_table["Energy " + en_carrier +" [TJ]"] = np.array(output_table["Metal content [kt]"])*np.array(output_table["Spec energy "+en_carrier+" [GJ/t]"])
+        output_table[en_carrier +"_TJ"] = np.array(output_table["Metal content [kt]"])*np.array(output_table["Spec energy "+en_carrier+" [GJ/t]"])
+
+    # ---- ADDITION FOR COPPER-SPECIFIC ELECTRICITY CONSUMPTION ----
+    # Initialize the new column with 0
+    output_table["Copper_Elec_Cons_TJ"] = 0.0
+
+    # Create a boolean mask for rows where the metal is Copper
+    is_copper_mask = (output_table["DsgAttr02"] == "Copper")
+
+    # For copper rows, calculate electricity consumption.
+    output_table["Copper_Elec_Cons_TJ"] = np.where(
+        output_table["DsgAttr02"] == "Copper",  # Condition
+        output_table["Metal content [kt]"] * output_table["Spec energy Elec [GJ/t]"], # Value if True
+        0.0  # Value if False
+    )
      
     ## Adding a uid which is needed afterwards
     output_table["id"] = range(1, len(output_table)+1)
@@ -240,7 +254,7 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     
     ## Converting df to gdf for further processing & extracting gpkg
     output_table_gdf = gpd.GeoDataFrame(output_table,
-                                        geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs={'init': 'epsg:4326'})
+                                        geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs='EPSG:4326')
     
     output_table_gdf.to_file(os.path.join(path_mines, ((display_name + ".gpkg"))), 
                                           layer=display_name, driver="GPKG")
