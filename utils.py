@@ -39,6 +39,7 @@ def finalizing_rasters(workspace, clusters, crs):
     print(datetime.datetime.now())
     return clusters
 
+
 def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, str=None):
     if filepath is None:
         messagebox.showinfo('Demand Mapping', 'Select the ' + name + ' map')
@@ -49,8 +50,8 @@ def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, s
     points.head(5)
     
     points_clip = gpd.clip(points, admin)
-    points_clip.crs = {'init' :'epsg:4326'}
-    points_proj=points_clip.to_crs({ 'init': crs})
+    points_clip.crs = 'epsg:4326'
+    points_proj=points_clip.to_crs(crs)
     if str:
         points_proj[column] = points_proj[column].str.replace(',', '')
         points_proj[column] = points_proj[column].astype(float)     ## added so that the sample mining productions works; you may need to update this as per layer used
