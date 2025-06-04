@@ -1,10 +1,10 @@
 ,Tier,1,,Tier,2,,Tier,3,,Tier,4,,Tier,5,
 Appliance,Watts,hours/day,Min. annual consumption (kWh),Watts,hours/day,Min. annual consumption (kWh),Watts,hours/day,Min. annual consumption (kWh),Watts,hours/day,Min. annual consumption (kWh),Watts,hours/day,Min. annual consumption (kWh)
-Electricity,1,4,4,37,6,222,54,8,432,54,10,870,54,18,1302
-Mobile telephone,2,2,4,2,4,8,2,4,8,2,4,8,2,4,8
-Radio,2,2,4,4,4,16,4,4,16,4,4,16,4,4,16
-Television,0,0,0,20,2,40,40,2,80,40,2,80,40,2,80
-Microwave,0,0,0,0,0,0,500,0.2,100,500,0.2,100,500,0.2,100
-Washing machine,0,0,0,0,0,0,500,0.5,250,500,0.5,250,500,0.5,250
-Refrigerator,0,0,0,0,0,0,0,0,0,300,3,900,300,3,900
-Air conditioner,0,0,0,0,0,0,0,0,0,0,0,0,1000,2,2000
+Electricity,1,4,9,37,6,256,54,8,569,54,10,1274,54,18,1598
+Mobile telephone,2,2,2,2,4,6,2,4,13,2,4,18,2,4,18
+Radio,2,2,2,4,4,6,4,4,3,4,4,3,4,4,3
+Television,0,0,0,20,2,29,40,2,73,40,2,128,40,2,183
+Microwave,0,0,0,0,0,0,500,0.2,37,500,0.2,55,500,0.2,91
+Washing machine,0,0,0,0,0,0,500,0.5,73,500,0.5,91,500,0.5,91
+Refrigerator,0,0,0,0,0,0,0,0,0,300,3,807,300,3,1445
+Air conditioner,0,0,0,0,0,0,0,0,0,0,0,0,1000,2,2920
