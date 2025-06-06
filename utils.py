@@ -11,9 +11,8 @@ import pandas as pd
 # Define extraction functions
 
 def processing_raster(name, method, clusters, filepath=None):
-    if filepath is None:
-        messagebox.showinfo('Demand Mapping', 'Select the ' + name + ' map')
-        filepath = filedialog.askopenfilename(filetypes=(("rasters", "*.tif"), ("all files", "*.*")))
+    if not filepath:
+        raise ValueError("Filepath for processing_raster cannot be None or empty.")
     raster = rasterio.open(filepath)
     
     clusters = zonal_stats(
@@ -41,9 +40,8 @@ def finalizing_rasters(workspace, clusters, crs):
 
 
 def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, str=None):
-    if filepath is None:
-        messagebox.showinfo('Demand Mapping', 'Select the ' + name + ' map')
-        filepath = filedialog.askopenfilename(filetypes = (("shapefile","*.shp"),("all files","*.*")))
+    if not filepath:
+        raise ValueError("Filepath for spatialjoinvectors cannot be None or empty.")    
     # points=gpd.read_file(filedialog.askopenfilename(filetypes = (("shapefile","*.shp"),("all files","*.*"))))
     # points=gpd.read_file(filedialog.askopenfilename(filetypes = (("all files","*.*"),)))
     points=gpd.read_file(filepath)
