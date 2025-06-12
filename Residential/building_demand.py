@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """building_demand.ipynb
 
-# Building Demand Method 1 Simplified
-
 #### Brief overview:
 
 The energy demand for each cell is assessed according to the following parameters:
@@ -73,11 +71,14 @@ from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.colors as colors
 # %matplotlib inline
 
+import importlib
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import datetime
 import warnings
 import scipy.spatial
+from scipy.optimize import fsolve
 warnings.filterwarnings('ignore')
 
 root = tk.Tk()
@@ -86,7 +87,11 @@ root.attributes("-topmost", True)
 
 pd.options.display.float_format = '{:,.2f}'.format
 
-from utils import processing_raster, finalizing_rasters
+# importlib.reload(Residential.config)
+from Residential import config
+importlib.reload(config)
+
+from utils import processing_raster, finalizing_rasters, convert_features_to_geodataframe
 
 """### Define directories and projection system"""
 
@@ -99,131 +104,243 @@ out_path = ROOT_DIR + "/Outputs"
 crs_WGS84 = CRS("EPSG:4326")    # Original WGS84 coordinate system
 crs_proj = CRS("EPSG:32736")    # Projection system for the selected country -- see http://epsg.io/ for more info
 
-"""### Define area of interest"""
+"""### Load initial data (grid and administrative boundaries)"""
 
-try: area
-except NameError: area = "COUNTRY"
-# area = "Copperbelt"
+def load_initial_data(app_config):
+    """
+    Loads administrative boundaries, region list, and the base hexagonal grid.
 
-## Regions list
-regions_path = "admin/"
-regions_list = 'Regions_list.csv'
-df_regions = pd.read_csv(regions_path + regions_list)
-regions = df_regions['Regions GADM']
-if area != "COUNTRY":
-    regions = [area]
-regions
-admin_path = in_path + "\\"+ 'admin'
-admin_name = "gadm41_ZMB.gpkg"
-region_col_name = "NAME_1"   ## Provide the name of the column you want to use to clip the hexagons e.g., "NAME" or "ADM1_NAME"
-layer_region_name = "ADM_ADM_1"
-layer_admin_name = "ADM_ADM_0"
-if area == "COUNTRY":
-    admin_gdf = gpd.read_file(admin_path + "/" + admin_name, layer=layer_admin_name)
-    region_gdf = gpd.read_file(admin_path + "/" + admin_name, layer=layer_region_name)
+    Args:
+        app_config: The configuration module.
 
-"""## Import GIS data
+    Returns:
+        tuple: (regions_list, admin_gdf, region_gdf, grid_gdf)
+               - regions_list: List of region names to process.
+               - admin_gdf: GeoDataFrame of the country boundary.
+               - region_gdf: GeoDataFrame of administrative regions.
+               - grid_gdf: GeoDataFrame of the hexagonal grid.
+    """
+    print("Loading initial data...")
 
-### Import layers to be used
+    # Load administrative boundaries
+    admin_gpkg_path = os.path.join(app_config.ADMIN_PATH, app_config.ADMIN_GPKG)
+    admin_gdf = gpd.read_file(admin_gpkg_path, layer=app_config.ADMIN_LAYER_COUNTRY)
+    region_gdf = gpd.read_file(admin_gpkg_path, layer=app_config.ADMIN_LAYER_REGION)
+    print(f"Admin boundaries loaded. Country GDF: {admin_gdf.shape}, Region GDF: {region_gdf.shape}")
+
+    # List all regions to process
+    regions_list = region_gdf[app_config.ADMIN_REGION_COLUMN_NAME].unique().tolist()
+
+    # Filter region_gdf if area_of_interest is not COUNTRY
+    area_of_interest = app_config.AREA_OF_INTEREST
+    if area_of_interest != "COUNTRY":
+        if area_of_interest not in regions_list:
+            raise ValueError(f"Error: The region '{area_of_interest}' is not found in the GeoPackage.")
+        regions_list = [area_of_interest]
+        region_gdf = region_gdf[region_gdf[app_config.ADMIN_REGION_COLUMN_NAME].isin(regions_list)]
+        print(f"Filtered region_gdf for {area_of_interest}: {region_gdf.shape}")
+
+    # Load hexagon grid
+    hexagons_path = os.path.join(app_config.OUTPUT_DIR, app_config.H3_GRID_HEX_SHP)
+    hexagons = gpd.read_file(hexagons_path)
+    grid_gdf = hexagons
+    print(f"Hexagon grid loaded: {grid_gdf.shape}")
+
+    return regions_list, admin_gdf, region_gdf, grid_gdf
+
+# Load initial data
+regions, admin_gdf, region_gdf, grid = load_initial_data(config)
+print(grid.crs)
+
+"""## Import data
+
+### Extract raster values to hexagons
 """
 
-hexagons = gpd.read_file(out_path + "\\" + "h3_grid_at_hex.shp")
+# General parameters for raster extraction
+DEFAULT_RASTER_METHOD_BUILDINGS = "sum"
+DEFAULT_RASTER_METHOD_LOCATIONWP = "median"
+DEFAULT_RASTER_METHOD_HREA = "mean"
+DEFAULT_RASTER_METHOD_RWI = "mean"
+DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ = "majority"
+DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN = "mean"
+DEFAULT_RASTER_METHOD_GDP = "mean"
 
-grid = hexagons
+def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_features_to_geodataframe):
+    """
+    Extracts raster data (WorldPop, HREA, RWI, Falchetta Tiers) to the grid cells.
 
-grid.head(4)
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        processing_raster_func: The `utils.processing_raster` function.
 
-"""### Extract raster values to hexagons
+    Returns:
+        GeoDataFrame: The grid GeoDataFrame with added raster data columns.
+    """
+    print("Extracting raster data...")
+    initial_crs = grid_gdf.crs
+    print(grid_gdf.crs)
+    # WorldPop Buildings Count
+    path_wp_bui_count = os.path.join(app_config.WORLDPOP_PATH, app_config.WP_BUILDINGS_COUNT_TIF)
+    grid_gdf = processing_raster_func(
+        name="buildings", # prefix for new column, e.g. 'buildingssum'
+        method=DEFAULT_RASTER_METHOD_BUILDINGS,
+        clusters=grid_gdf,
+        filepath=path_wp_bui_count
+    )
+    print(f"Processed WorldPop Buildings Count.")
 
-Extract count of buildings per hex from WorldPop
-"""
+    # WorldPop Urban
+    path_wp_urban = os.path.join(app_config.WORLDPOP_PATH, app_config.WP_BUILDINGS_URBAN_TIF)
+    grid_gdf = processing_raster_func(
+        name="locationWP",
+        method=DEFAULT_RASTER_METHOD_LOCATIONWP,
+        clusters=grid_gdf,
+        filepath=path_wp_urban
+    )
+    print(f"Processed WorldPop Urban.")
 
-pathWorldPopBuiCount = "Residential/Data/WorldPop/ZMB_buildings_v2_0_count.tif"
-# grid = processing_raster("buildings", "count", grid, filepath=pathWorldPopBuiCount)
-grid = processing_raster("buildings", "sum", grid, filepath=pathWorldPopBuiCount) #Copperbelt_buildings_v2_0_count from https://apps.worldpop.org/peanutButter/
-# pathWorldPopBuiArea = "Residential/Data/WorldPop/Copperbelt_buildings_v2_0_total_area.tif"
-# grid = processing_raster("bui_area_WP", "sum", grid, filepath=pathWorldPopBuiArea) #Copperbelt_buildings_v2_0_count from https://apps.worldpop.org/peanutButter/
+    # HREA Lighting
+    path_hrea_lighting = os.path.join(app_config.LIGHTING_PATH, app_config.HREA_LIGHTING_TIF)
+    grid_gdf = processing_raster_func(
+        name="HREA",
+        method=DEFAULT_RASTER_METHOD_HREA,
+        clusters=grid_gdf,
+        filepath=path_hrea_lighting
+    )
+    print(f"Processed HREA Lighting.")
 
-"""Extract urban areas from WorldPop"""
+    # RWI
+    path_rwi = os.path.join(app_config.RWI_PATH, app_config.RWI_MAP_TIF)
+    grid_gdf = processing_raster_func(
+        name="rwi",
+        method=DEFAULT_RASTER_METHOD_RWI,
+        clusters=grid_gdf,
+        filepath=path_rwi
+    )
+    print(f"Processed RWI.")
 
-pathWorldPopBuiUrban = "Residential/Data/WorldPop/ZMB_buildings_v2_0_urban.tif"
-grid = processing_raster("locationWP", "median", grid, filepath=pathWorldPopBuiUrban)      #Copperbelt_population_v1_0_gridded from https://apps.worldpop.org/peanutButter/
+    # Falchetta Tiers - Majority
+    path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
+    grid_gdf = processing_raster_func(
+        name="tiers_falchetta_maj",
+        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ,
+        clusters=grid_gdf,
+        filepath=path_falchetta_tiers
+    )
+    print(f"Processed Falchetta Tiers (Majority).")
 
-"""Extract lighing data"""
+    # Falchetta Tiers - Mean
+    grid_gdf = processing_raster_func(
+        name="tiers_falchetta_mean",
+        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN,
+        clusters=grid_gdf,
+        filepath=path_falchetta_tiers
+    )
+    print(f"Processed Falchetta Tiers (Mean).")
 
-## set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
-## http://www-personal.umich.edu/~brianmin/HREA/data.html
-# pathHREA = "Residential/Data/Lighting/Copperbelt_set_lightscore_sy_2019_Nodata_values_fixed.tif"
-pathHREA = "Residential/Data/Lighting/Zambia_set_lightscore_sy_2019.tif"
-grid = processing_raster("HREA", "mean", grid, filepath=pathHREA)
-probElec= "HREA"
+    # GDP
+    # path_gdp = os.path.join(app_config.GDP_PATH, app_config.GDP_PPP_TIF)
+    #         grid_gdf = processing_raster_func(
+    #             name="GDP_PPP",
+    #             method=app_config.DEFAULT_RASTER_METHOD_GDP, # Assuming this exists in config
+    #             clusters=grid_gdf,
+    #             filepath=path_gdp
+    #         )
+    #         print(f"Processed GDP. Columns: {grid_gdf.columns}")
 
-"""Extract RWI"""
+    grid_gdf = convert_features_to_geodataframe(grid_gdf, initial_crs)
+    print(grid_gdf.crs)
+    # Column renaming based on how processing_raster forms column names (prefix + method)
+    rename_map = {
+        f"buildings{DEFAULT_RASTER_METHOD_BUILDINGS}": app_config.COL_BUILDINGS_SUM, # e.g. buildingssum
+        f"locationWP{DEFAULT_RASTER_METHOD_LOCATIONWP}": app_config.COL_LOCATION_WP, # e.g. locationWPmedian
+        f"HREA{DEFAULT_RASTER_METHOD_HREA}": app_config.COL_HREA_MEAN, # e.g. HREAmean
+        f"rwi{DEFAULT_RASTER_METHOD_RWI}": app_config.COL_RWI_MEAN, # e.g. rwimean
+        f"tiers_falchetta_maj{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ}": app_config.COL_TIERS_FALCHETTA_MAJ,
+        f"tiers_falchetta_mean{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN}": app_config.COL_TIERS_FALCHETTA_MEAN,
+        # f"GDP_PPP{app_config.DEFAULT_RASTER_METHOD_GDP}" = app_config.COL_GDP_PPP_MEAN,
+        f"region_name{app_config.ADMIN_REGION_COLUMN_NAME}": app_config.COL_ADMIN_NAME,
+    }
 
-# Relative Wealth Index (RWI) -- extracting the mean value per building
-# Link: https://gee-community-catalog.org/projects/rwi/
-pathRWI = "Residential/Data/WealthIndex/rwi_map.tif"
-grid = processing_raster("rwi", "mean", grid, filepath=pathRWI)
+    # Filter out renames for columns not actually present
+    actual_rename_map = {k: v for k, v in rename_map.items() if k in grid_gdf.columns}
+    grid_gdf.rename(columns=actual_rename_map, inplace=True)
+    print(f"Columns after renaming: {grid_gdf.columns}")
+    print(grid_gdf.crs)
+    # Specific adjustments from original script
+    if app_config.COL_TIERS_FALCHETTA_MEAN in grid_gdf.columns:
+        grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN] = grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN].round().astype(int)
+    print(grid_gdf.crs)
+    # Fill NaN values: Add 0 values in HREA column when there is none
+    if app_config.COL_HREA_MEAN in grid_gdf.columns:
+        grid_gdf[app_config.COL_HREA_MEAN] = grid_gdf[app_config.COL_HREA_MEAN].fillna(0)
+    else:
+        print(f"Warning: Column {app_config.COL_HREA_MEAN} not found for fillna.")
 
-"""Extract tiers Falchetta dataset"""
+    # Add values in RWI column when there is none
+    if app_config.COL_RWI_MEAN in grid_gdf.columns:
+        grid_gdf[app_config.COL_RWI_MEAN].fillna(grid_gdf[app_config.COL_RWI_MEAN].mean(numeric_only=True).round(1), inplace=True)
+        # print(f"RWI min after fillna: {grid_gdf[app_config.COL_RWI_MEAN].min()}")
+        # print(f"RWI max after fillna: {grid_gdf[app_config.COL_RWI_MEAN].max()}")
+    else:
+        print(f"Warning: Column {app_config.COL_RWI_MEAN} not found for fillna.")
+    print(grid_gdf.crs)
+    print("Finished extracting and processing raster data.")
+    return grid_gdf
 
-# extract tiers share from Falchetta dataset #https://www.nature.com/articles/s41597-019-0122-6#Sec7
-pathElecAccess = "Residential/Data/Falchetta_ElecAccess/Zambia_tiersofaccess_2018.tif"
-grid = processing_raster("tiers_falchetta", "majority", grid, filepath=pathElecAccess)
-
-# extract tiers share from Falchetta dataset #https://www.nature.com/articles/s41597-019-0122-6#Sec7
-pathElecAccess = "Residential/Data/Falchetta_ElecAccess/Zambia_tiersofaccess_2018.tif"
-grid = processing_raster("tiers_falchetta", "mean", grid, filepath=pathElecAccess)
-
-"""Extract GDP Kummu dataset"""
-
-# #Link https://www.nature.com/articles/sdata20184#Sec9
-# pathGDP = "Residential/Data/GDP/GDP_PPP_30arcsec_v3_band3_Zambia.tif"
-# grid = processing_raster("GDP_PPP", "mean", grid, filepath=pathGDP)
-
-"""##### Once done with rasters run this cell"""
-
-grid = finalizing_rasters(out_path, grid, crs_proj)
-
-grid.rename({'HREAmean': 'HREA'}, axis=1, inplace=True)
-grid.rename({'rwimean': 'rwi'}, axis=1, inplace=True)
-grid.rename({'locationWPmedian': 'locationWP'}, axis=1, inplace=True)
-grid.rename({'tiers_falchettamajority': 'tiers_falchetta_maj'}, axis=1, inplace=True)
-grid.rename({'tiers_falchettamean': 'tiers_falchetta_mean'}, axis=1, inplace=True)
-grid['tiers_falchetta_mean'] = grid['tiers_falchetta_mean'].round().astype(int)
-grid.rename({'GDP_PPPmean': 'GDP_PPP'}, axis=1, inplace=True)
-
-"""Add 0 values in HREA column when there is none"""
-
-grid['HREA'] = grid['HREA'].fillna(0)
-
-"""Add values in RWI column when there is none"""
-
-grid["rwi"].fillna(grid["rwi"].mean(numeric_only=True).round(1), inplace=True)
-print(grid["rwi"].min())
-print(grid["rwi"].max())
+# Extract raster data
+grid = extract_raster_data(grid, config, processing_raster, convert_features_to_geodataframe)
+print(grid.crs)
 
 grid.head(3)
 
 """### Extract residential and service demand from UN stats"""
 
-# Residential energy demand at the country level
-energyBalance_path = "EnergyBalance/"
-file_energyBalance = "UNSD+DF_UNData_EnergyBalance+1.0_Zambia.csv"
-eb = pd.read_csv(energyBalance_path + file_energyBalance)
-code_elec = "B07_EL"
-code_hh =  "B50_1231"
-total_residentialenergy_TJ = eb.loc[(eb['COMMODITY'] == code_elec) & (eb['TRANSACTION'] == code_hh) & (eb['TIME_PERIOD'] == 2019 ), 'OBS_VALUE'] #TJ
-total_residentialenergy_TJ = pd.to_numeric(total_residentialenergy_TJ.str.replace(',', '')) # convert to numeric and remove commas
-total_residentialenergy_GWh = total_residentialenergy_TJ.iloc[0]/3.6 # conversion in GWh
-print("Residential electricity consumption UN stats", total_residentialenergy_GWh, "GWh")
+def load_un_stats(app_config):
+    """
+    Loads UN energy balance statistics for residential and services sectors.
 
-code_ser =  "B49_1235"
-cod_oth = "B51_1234" # Other consumption not elsewhere specified in UN stats
-total_servicesenergy = eb.loc[(eb['COMMODITY'] == code_elec) & (eb['TRANSACTION'] == code_ser) & (eb['TIME_PERIOD'] == 2019 ), 'OBS_VALUE'] #TJ
-total_servicesenergy = pd.to_numeric(total_servicesenergy.str.replace(',', '')) # convert to numeric and remove commas
-total_servicesenergy_GWh = total_servicesenergy.iloc[0]/3.6 # conversion in GWh
-print("services electricity consumption UN STATS:", f"{total_servicesenergy_GWh:,.0f}", "GWh")
+    Args:
+        app_config: The configuration module.
+
+    Returns:
+        tuple: (total_residential_elec_GWh, total_services_elec_GWh)
+    """
+    print("Loading UN energy balance statistics...")
+    eb_path = os.path.join(app_config.ENERGY_BALANCE_PATH, app_config.UN_ENERGY_BALANCE_CSV)
+    eb = pd.read_csv(eb_path)
+
+    # Residential electricity
+    res_elec_tj_series = eb.loc[
+        (eb['COMMODITY'] == app_config.UN_ELEC_CODE) &
+        (eb['TRANSACTION'] == app_config.UN_HH_TRANSACTION_CODE) &
+        (eb['TIME_PERIOD'] == app_config.UN_ENERGY_YEAR),
+        'OBS_VALUE'
+    ]
+    if res_elec_tj_series.empty:
+        raise ValueError(f"No UN residential energy data found for year {app_config.UN_ENERGY_YEAR} with specified codes.")
+    res_elec_tj_series = pd.to_numeric(res_elec_tj_series.str.replace(',', '').iloc[0])
+    total_residential_elec_GWh = res_elec_tj_series / 3.6
+    print(f"Total Residential Energy (UN Stats): {total_residential_elec_GWh:.0f} GWh")
+
+    # Services electricity
+    ser_elec_tj_series = eb.loc[
+        (eb['COMMODITY'] == app_config.UN_ELEC_CODE) &
+        (eb['TRANSACTION'] == app_config.UN_SERVICES_TRANSACTION_CODE) &
+        (eb['TIME_PERIOD'] == app_config.UN_ENERGY_YEAR),
+        'OBS_VALUE'
+    ]
+    if ser_elec_tj_series.empty:
+        raise ValueError(f"No UN services energy data found for transaction {app_config.UN_SERVICES_TRANSACTION_CODE}.")
+    ser_elec_tj_series = pd.to_numeric(ser_elec_tj_series.str.replace(',', '').iloc[0])
+    total_services_elec_GWh = ser_elec_tj_series / 3.6
+    print(f"Total Services Energy (UN Stats): {total_services_elec_GWh:.0f} GWh")
+
+    return total_residential_elec_GWh, total_services_elec_GWh
+
+total_residential_elec_GWh, total_services_elec_GWh = load_un_stats(config)
 
 """## Residential electricity consumption assessment
 
@@ -235,7 +352,7 @@ fig, ax = plt.subplots(figsize=(15, 10))
 grid.sort_values('buildingssum', ascending=True).plot(
     ax=ax, column='buildingssum', cmap="Reds", legend=True, alpha=0.9)
 ax.set_aspect('equal', 'box')
-txt = ax.set_title('Buildings in {}'.format(area) )
+# txt = ax.set_title('Buildings in {}'.format(area) )
 
 # Plot the lighting map
 # Create the axis first
@@ -252,125 +369,166 @@ grid_filtered.sort_values('HREA', ascending=True).plot(
 #     ax=ax, column='buildingssum', cmap="Blues", legend=True, alpha=0.9)
 
 ax.set_aspect('equal', 'box')
-txt = ax.set_title('HREA in {}'.format(area) )
+# txt = ax.set_title('HREA in {}'.format(area) )
 
-"""Determine location (ruban or rural) of each cell"""
+"""#### Determine location (ruban or rural) of each cell"""
 
-# for each hexagon, determine if it's rural or urban --> choose best source
-# grid["locAssessed"] = grid.apply(lambda row: ("urban" if ((row['buildingssum'] > 1000)) # number chosen to get 1 for nb of HH per rural building
+def determine_location_status(grid_gdf, app_config):
+    """
+    Determines urban/rural status for each grid cell based on WorldPop urban extent data.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid with WorldPop data.
+        app_config: The configuration module.
+
+    Returns:
+        GeoDataFrame: grid_gdf with an added column for location status.
+    """
+    print("Determining location status (urban/rural)...")
+    if app_config.COL_LOCATION_WP not in grid_gdf.columns:
+        raise KeyError(f"Required column '{app_config.COL_LOCATION_WP}' not found in grid. Available: {grid_gdf.columns.tolist()}")
+
+    grid_gdf[app_config.COL_LOC_ASSESSED] = grid_gdf.apply(
+        lambda row: "urban" if row[app_config.COL_LOCATION_WP] == 1 else "rural",
+        axis=1
+    )
+    # Other methods
+    # grid["locGHSL"] = grid.apply (lambda row: ("urban" if ((row['SMOD'] == 30) or (row['SMOD'] == 21) or (row['SMOD'] == 22) or (row['SMOD' ] == 23))
 #                                              else "rural"), axis=1)
-grid["locWorldPop"] = grid.apply(lambda row: ("urban" if ((row['locationWP'] == 1))
-                                             else "rural"), axis=1)
-# grid["locGHSL"] = grid.apply (lambda row: ("urban" if ((row['SMOD'] == 30) or (row['SMOD'] == 21) or (row['SMOD'] == 22) or (row['SMOD' ] == 23))
+    # grid["locAssessed"] = grid.apply(lambda row: ("urban" if ((row['buildingssum'] > 1000)) # number chosen to get 1 for nb of HH per rural building
 #                                              else "rural"), axis=1)
-grid["location"] = grid["locWorldPop"]
+    print(f"'{app_config.COL_LOC_ASSESSED}' column created. Counts: {grid_gdf[app_config.COL_LOC_ASSESSED].value_counts().to_dict()}")
+    return grid_gdf
+
+grid = determine_location_status(grid, config)
 
 # map of the urban and rural areas WorldPop
 fig2, ax2 = plt.subplots(figsize=(10, 5))
 grid.sort_values('locWorldPop', ascending=True).plot(
     ax=ax2, column='locWorldPop', cmap="Reds", legend=True, alpha=0.5)
 ax2.set_aspect('equal', 'box')
-txt = ax2.set_title('Urban and rural areas WorldPop in {} '.format(area))
+# txt = ax2.set_title('Urban and rural areas WorldPop in {} '.format(area))
 
-"""Determine electrifed status of each cell"""
+"""#### Determine electrifed status of each cell"""
 
-# Define target projected CRS (example: UTM Zone 35S)
-target_crs_meters = "EPSG:32735"
+def determine_electrification_status(grid_gdf, app_config, admin_gdf):
+    """
+    Determines electrification status of grid cells based on proximity to MV/HV lines
+    and HREA (High Resolution Electricity Access) likelihood scores.
 
-# Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
-# or https://energydata.info/dataset/zambia-electrical-lines
-mv_lines_gdf = gpd.read_file(ROOT_DIR + "/Grid/Zambia - MVLines/" + "Zambia - MVLines.shp")
-hv_lines_gdf = gpd.read_file(ROOT_DIR + "/Grid/Zambia - HVLines/" + "HVLines.shp")
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        admin_gdf: GeoDataFrame of admin boundaries
 
-# --- Prepare grid for sjoin (do this once if grid's CRS is not target_crs_meters) ---
-if grid.crs != target_crs_meters:
-    print(f"Reprojecting main grid from {grid.crs} to {target_crs_meters} for proximity checks...")
-    grid_projected_for_sjoin = grid.to_crs(target_crs_meters)
-else:
-    grid_projected_for_sjoin = grid.copy() # Use a copy
+    Returns:
+        GeoDataFrame: grid_gdf with added columns for line proximity and electrification status.
+    """
+    print("Determining electrification status...")
 
-# --- Initialize the combined proximity column in your original 'grid' ---
-grid['is_near_any_line'] = False # Initialize all to False
+    # Load MV and HV lines
+    mv_lines_gdf = gpd.read_file(app_config.MV_LINES_SHP)
+    hv_lines_gdf = gpd.read_file(app_config.HV_LINES_SHP)
+    # print(f"MV lines loaded: {mv_lines_gdf.shape}, HV lines loaded: {hv_lines_gdf.shape}")
 
-# --- Define line types and their specific buffer distances ---
-lines_to_process = [
-    {'name': 'HV Lines', 'gdf': hv_lines_gdf, 'buffer_dist': 500},
-    {'name': 'MV Lines', 'gdf': mv_lines_gdf, 'buffer_dist': 500}
-]
+    print("--- Initial Data Sanity Check ---")
+    target_crs = config.TARGET_CRS_METERS
+    print(f"Grid CRS: {grid_gdf.crs} | Shape: {grid_gdf.shape}")
+    print(f"Admin Boundary CRS: {admin_gdf.crs} | Shape: {admin_gdf.shape}")
+    print(f"MV Lines CRS: {mv_lines_gdf.crs} | Shape: {mv_lines_gdf.shape}")
+    print(f"HV Lines CRS: {hv_lines_gdf.crs} | Shape: {hv_lines_gdf.shape}")
+    print(f"Target CRS for all operations: {target_crs}\n")
+    # --- STEP 1: PROJECT ALL DATA TO THE TARGET CRS ---
+    # This ensures all subsequent operations (clip, buffer, sjoin) are in the same
+    # projected, meter-based coordinate system.
 
-for line_info in lines_to_process:
+    print("--- Projecting all data to target CRS ---")
+    grid_projected = grid_gdf.to_crs(target_crs)
+    admin_projected = admin_gdf.to_crs(target_crs)
+    # mv_lines_projected = mv_lines_gdf.to_crs(target_crs)
+    # hv_lines_projected = hv_lines_gdf.to_crs(target_crs)
 
-    current_lines_gdf = line_info['gdf']
-    line_name = line_info['name']
-    current_max_dist_lines = line_info['buffer_dist']
+    # Initialize the proximity column to False
+    grid_gdf[app_config.COL_IS_NEAR_ANY_LINE] = False
 
-    # 1. Clip
-    print(f"Original CRS of {line_name}: {current_lines_gdf.crs}")
-    # Ensure admin_gdf is in a CRS suitable for clipping, or reproject current_lines_gdf to admin_gdf.crs
-    # For simplicity, assuming admin_gdf.crs is what we want for clipping or it's handled.
-    # If admin_gdf is in target_crs_meters:
-    admin_gdf_proj = admin_gdf.to_crs(target_crs_meters) if admin_gdf.crs != target_crs_meters else admin_gdf.copy()
+    # Define line types and their specific buffer distances
+    lines_to_process = [
+        {'name': 'HV Lines', 'gdf': hv_lines_gdf, 'buffer_dist': app_config.HV_LINES_BUFFER_DIST},
+        {'name': 'MV Lines', 'gdf': mv_lines_gdf, 'buffer_dist': app_config.MV_LINES_BUFFER_DIST}
+    ]
 
-    if current_lines_gdf.crs != admin_gdf_proj.crs:
-        lines_for_clip = current_lines_gdf.to_crs(admin_gdf_proj.crs)
-    else:
-        lines_for_clip = current_lines_gdf.copy()
+    for line_info in lines_to_process:
+        current_lines_gdf = line_info['gdf']
+        line_name = line_info['name']
+        buffer_dist = line_info['buffer_dist']
+        print(f"Processing proximity for {line_name} with buffer {buffer_dist}m...")
 
-    clipped_lines_gdf = gpd.clip(lines_for_clip, admin_gdf_proj)
+        if current_lines_gdf.crs != target_crs:
+            lines_for_clip_and_buffer = current_lines_gdf.to_crs(target_crs)
+        else:
+            lines_for_clip_and_buffer = current_lines_gdf.copy()
 
-    # clipped_lines_gdf = gpd.clip(lines_gdf, admin_gdf)
-    # lines_projected_gdf = clipped_lines_gdf.to_crs(target_crs_meters)
-    print(f"Clipped Lines CRS: {clipped_lines_gdf.crs}")
-    print(f"target CRS: {target_crs_meters}")
-    # # 2. Reproject for buffering
-    # if clipped_lines_gdf.crs != target_crs_meters:
-    #     lines_projected_gdf = clipped_lines_gdf.to_crs(target_crs_meters)
-    # else:
-    #     lines_projected_gdf = clipped_lines_gdf.copy()
+        # 1. Clip lines
+        clipped_lines_gdf = gpd.clip(lines_for_clip_and_buffer, admin_projected)
+        if clipped_lines_gdf.empty:
+            print(f"No {line_name} found within the admin boundaries after clipping.")
+            continue
 
-    # 3. Buffer
-    lines_buffer_series = clipped_lines_gdf.buffer(current_max_dist_lines)
+        # 2. Buffer
+        buffered_lines = clipped_lines_gdf.buffer(buffer_dist)
+        if buffered_lines.is_empty.all():
+            print(f"Buffer for {line_name} is empty. Skipping spatial join.")
+            continue
 
-    # 4. Dissolve buffers
-    # Create a GeoDataFrame from the buffers for the spatial join
-    # This creates a single (Multi)Polygon of all buffered areas.
-    buffers_dissolved = lines_buffer_series.unary_union
-    if buffers_dissolved is None or buffers_dissolved.is_empty:
-        print("Warning: line buffers are empty. All hexagons will be marked as not near lines.")
-    else:
-        current_buffered_areas_gdf = gpd.GeoDataFrame(geometry=[buffers_dissolved], crs=target_crs_meters)
+        # 3. Create a GeoDataFrame of the individual buffers
+        buffered_areas_gdf = gpd.GeoDataFrame(geometry=buffered_lines, crs=target_crs)
 
-    # 5. Perform spatial join using the ALREADY PROJECTED grid_projected_for_sjoin
-    # IMPORTANT: 'grid' GeoDataFrame must ALSO be in 'target_crs_meters'
-    join_result = gpd.sjoin(grid_projected_for_sjoin, current_buffered_areas_gdf, how='left', predicate='intersects')
+        # 4. Perform the spatial join.
+        # Use an 'inner' join to get only the grid cells that intersect.
+        intersecting_grid = gpd.sjoin(grid_projected, buffered_areas_gdf, how='inner', predicate='intersects')
 
-    # 6. Calculate proximity for THIS line type (boolean Series aligned with grid_projected_for_sjoin's index)
-    proximity_to_current_line = join_result['index_right'].notna()
-    # # Add the result back to the original grid
-    # grid['is_near_line'] = join_result['index_right'].notna()
-    # print(grid['is_near_mv_line'].value_counts())
+        # Get the unique indices of the original grid cells that are near the lines
+        indices_to_update = intersecting_grid.index.unique()
 
-    # 7. Update the 'is_near_any_line' column in the ORIGINAL grid using logical OR.
-    #    Pandas aligns by index, so this works even if grid's geometry CRS is different.
-    grid['is_near_any_line'] = grid['is_near_any_line'] | proximity_to_current_line
-    print(f"Proximity to {line_name} calculated. Current 'is_near_any_line' counts:")
-    print(grid['is_near_any_line'].value_counts())
+        # 5. Update the 'is_near_any_line' column in the ORIGINAL grid.
+        grid_gdf.loc[indices_to_update, app_config.COL_IS_NEAR_ANY_LINE] = True
 
+    print(f"Updated 'is_near_any_line' column. Current counts:")
+    print(grid_gdf['is_near_any_line'].value_counts())
 
-# --- Final check ---
-print("\nFinal 'is_near_any_line' status after processing all line types:")
-print(grid['is_near_any_line'].value_counts())
+    if app_config.PROB_ELEC_COL not in grid_gdf.columns:
+        raise KeyError(f"Required column '{app_config.PROB_ELEC_COL}' not found in grid.")
+    if app_config.COL_LOC_ASSESSED not in grid_gdf.columns:
+        raise KeyError(f"Required column '{app_config.COL_LOC_ASSESSED}' not found in grid.")
 
-# You can drop the grid_projected_for_sjoin if it's a large intermediate GeoDataFrame and no longer needed
-del grid_projected_for_sjoin
+    # electrified or non-electrified status with thresholds depending on the location
+    threshold_map = {'urban': app_config.THRESHOLD_ELEC_ACCESS_URBAN, 'rural': app_config.THRESHOLD_ELEC_ACCESS_RURAL}
+
+    grid_gdf[app_config.COL_STATUS_ELECTRIFIED] = grid_gdf.apply(
+        lambda row: "elec" if (
+            row[app_config.PROB_ELEC_COL] > threshold_map[row[app_config.COL_LOC_ASSESSED]] and
+            row[app_config.COL_IS_NEAR_ANY_LINE]
+        ) else "nonelec",
+        axis=1
+    )
+    print(f"'{app_config.COL_STATUS_ELECTRIFIED}' column created. Counts: {grid_gdf[app_config.COL_STATUS_ELECTRIFIED].value_counts().to_dict()}")
+
+    return grid_gdf
+
+grid = determine_electrification_status(grid, config, admin_gdf)
+
+grid['buildingssum'].sum()
+
+grid.columns
 
 # # Create a figure and axes for the plot
-# fig, ax = plt.subplots(1, 1, figsize=(12, 10)) # Adjust figsize as needed
+# fig, ax = plt.subplots(1, 1, figsize=(5, 5)) # Adjust figsize as needed
 
 # if not lines_buffer_series.empty:
 #     lines_buffer_series.plot(ax=ax, color='blue', linewidth=1.5, label='Buffer Lines (Clipped)')
 # else:
 #     print("lines_gdf is empty. Nothing to plot for MV lines.")
+# admin_gdf_proj.plot(ax=ax, edgecolor='brown', color='None', alpha=0.6)
 
 # # 3. Add a title and legend
 # plt.title(' Buffer Lines within Administrative Boundary')
@@ -387,234 +545,255 @@ fig3, ax3 = plt.subplots(figsize=(10, 5))
 grid.sort_values('is_near_any_line', ascending=True).plot(
     ax=ax3, column='is_near_any_line', cmap="Reds", legend=True, alpha=0.25)
 ax3.set_aspect('equal', 'box')
-txt = ax3.set_title('Lines {} '.format(area))
+# txt = ax3.set_title('Lines {} '.format(area))
 
-# electrified or non-electrified status with thresholds depending on the location
-threshold_elec_access = {'urban': 0.9, 'rural': 0.1}
-grid["Status_electrified"] = grid.apply(
-    lambda row: "elec"
-        if (row[probElec] > threshold_elec_access[row['location']]
-            and row['is_near_any_line'] == True)
-        else "nonelec",
-    axis=1
-)
+def load_census_data(app_config):
+    """
+    Loads provincial and national level census data from CSV files.
 
-print(grid["Status_electrified"].value_counts())
+    Args:
+        app_config: The configuration module.
 
-"""#### Province data available"""
+    Returns:
+        tuple: (df_censusdata, df_nationaldata)
+               - df_censusdata: DataFrame with provincial census data.
+               - df_nationaldata: DataFrame with national census data.
+    """
+    print("Loading census data...")
+    if app_config.PROVINCE_DATA_AVAILABLE:
+        # Provincial census data
+        census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_ZAMBIA_PROVINCE_CSV)
+        df_censusdata = pd.read_csv(census_path)
+        # Process provincial census data
+        data_HH = df_censusdata[['Region', 'Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
+        data_HH.rename(columns={'Region': 'region', 'Urban': 'HH_urban', 'Rural': 'HH_rural'}, inplace=True)
+        data_HH.set_index('region', inplace=True)
+        data_HH['HH_total'] = data_HH['HH_urban'] + data_HH['HH_rural']
+        data_HH = data_HH.astype(float)
+        print(f"Provincial census data loaded: {df_censusdata.shape}")
+    else:
+        # National census data
+        national_census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_ZAMBIA_NATIONAL_CSV)
+        df_nationaldata = pd.read_csv(national_census_path)
+        data_HH = df_nationaldata[['Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
+        print(f"National census data loaded: {df_nationaldata.shape}")
 
-province_data = True
+    # return df_censusdata, df_nationaldata
+    return data_HH
 
-if province_data == True:
-    # Census data: adjust to the country
-    data_path = "Residential/Data/"
-    census_name = 'Census_Zambia.csv'
-    df_censusdata = pd.read_csv(data_path + census_name)
+data_HH = load_census_data(config)
+data_HH
 
-    # Create a new dataframe that will contain the regional data
-    data_HH = df_censusdata[['Region', 'Urban', 'Rural']]
-    data_HH = data_HH.rename({'Region':'region','Urban':'HH_urban', 'Rural':'HH_rural'}, axis = 1)
-    data_HH = data_HH.set_index(['region'])
-    data_HH['HH_total'] = data_HH['HH_urban'] + data_HH['HH_rural']
-    data_HH = data_HH.astype(float)
+"""#### Assess number of households per cell"""
 
-if province_data == True:
-    # Option 1: use buildings count from Worldpop to assess number of buildings
-    # total number of buildings
-    data_buildings = []
-    for region in regions:
-        totalBuildings = grid[(grid['NAME_1'] == region)]['buildingssum'].sum()
-        urbanBuildings = grid[(grid['location'] == "urban") & (grid['NAME_1'] == region)]['buildingssum'].sum()
-        ruralBuildings = grid[(grid['location'] == "rural") & (grid['NAME_1'] == region)]['buildingssum'].sum()
-        data_region = {
-            'region': region,
-            'totalBuildings': totalBuildings,
-            'urbanBuildings': urbanBuildings,
-            'ruralBuildings': ruralBuildings,
-            'shareRuralBuild': ruralBuildings / totalBuildings,
-            'shareUrbanBuild': urbanBuildings / totalBuildings,
-        }
-        data_buildings.append(data_region)
-        # print("total Buildings in",f"{region}",f"{totalBuildings:,.0f}", "urban:",f"{urbanBuildings:,.0f}", "rural:",f"{ruralBuildings:,.0f}")
-        # print("share Build urban:", f"{data_region['shareUrbanBuild']:.0%}","rural:",f"{data_region['shareRuralBuild']:.0%}")
+def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
+    """
+    Calculates residential building counts and household numbers per grid cell.
 
-    df_buildings = pd.DataFrame(data_buildings)
-    df_buildings = df_buildings.set_index('region')
-    # df_buildings
-    df_HH_buildings = data_HH.merge(df_buildings, left_on='region', right_on='region')
-    df_HH_buildings
+    It distinguishes between urban and rural areas and uses either provincial or
+    national level census data based on `app_config.PROVINCE_DATA_AVAILABLE`.
+    Calculates total population if provincial data (with household sizes) is used.
 
-"""Assess number of residential buildings"""
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        data_HH: DataFrame with census data.
+        regions_list: List of region names being processed.
 
-if province_data == True:
-    # share of residential building in each location --> not used because we use the assumption of nb of HH per res bui but can be used if we have data on share of residential building
-    # shareResBuildings = {"urban": 0.5, "rural": 0.15} # --> to change! # number chosen to get 1 for nb of HH per rural building, and for urban twice the value in rural
-    # df_HH_buildings['resUrbanBui'] = df_HH_buildings['urbanBuildings'] * shareResBuildings["urban"]
-    # df_HH_buildings['resRuralBui'] = df_HH_buildings['ruralBuildings'] * shareResBuildings["rural"]
-    # df_HH_buildings['resTotalBui'] = df_HH_buildings['resUrbanBui'] + df_HH_buildings['resRuralBui']
+    Returns:
+        tuple: (grid_gdf, df_HH_buildings)
+               - grid_gdf: Updated grid GeoDataFrame with new household/population columns.
+               - df_HH_buildings: DataFrame summarizing household data by region (if provincial).
+                                  Returns None if national data is used.
+    """
+    print("Calculating household numbers...")
+    df_HH_buildings = None # Initialize for optional return
 
-    # Assess the number of residential HH per building
-    nbOfHHperResBuilding =  {"urban": 1.1, "rural": 1}  # --> to update depending on the country
-    # nbOfHHperResBuilding["urban"]= HH_urban/resUrbanBuildings --> use if the main assumption is on the share of res buildings
-    # nbOfHHperResBuilding["rural"]= HH_rural/resRuralBuildings --> use if the main assumption is on the share of res buildings
+    if app_config.PROVINCE_DATA_AVAILABLE:
+        data_buildings_list = []
+        for region_name in regions_list:
+            if app_config.COL_ADMIN_NAME not in grid_gdf.columns:
+                 raise KeyError(f"Admin name column '{app_config.COL_ADMIN_NAME}' not found in grid for region filtering.")
 
-    # Assess the number of residential buildings
-    df_HH_buildings['shareUrbanResBui'] = df_HH_buildings['HH_urban'] /(nbOfHHperResBuilding["urban"]* df_HH_buildings['urbanBuildings'])
-    df_HH_buildings['shareRuralResBui'] = df_HH_buildings['HH_rural'] /(nbOfHHperResBuilding["rural"]* df_HH_buildings['ruralBuildings'])
-    df_HH_buildings['resUrbanBui'] = df_HH_buildings['urbanBuildings'] * df_HH_buildings['shareUrbanResBui']
-    df_HH_buildings['resRuralBui'] = df_HH_buildings['ruralBuildings'] * df_HH_buildings['shareRuralResBui']
-    df_HH_buildings['resTotalBui'] = df_HH_buildings['resUrbanBui'] + df_HH_buildings['resRuralBui']
+            totalBuildings = grid_gdf[grid_gdf[app_config.COL_ADMIN_NAME] == region_name][app_config.COL_BUILDINGS_SUM].sum()
+            urbanBuildings = grid_gdf[(grid_gdf[app_config.COL_LOC_ASSESSED] == "urban") & (grid_gdf[app_config.COL_ADMIN_NAME] == region_name)][app_config.COL_BUILDINGS_SUM].sum()
+            ruralBuildings = grid_gdf[(grid_gdf[app_config.COL_LOC_ASSESSED] == "rural") & (grid_gdf[app_config.COL_ADMIN_NAME] == region_name)][app_config.COL_BUILDINGS_SUM].sum()
 
-    # Check: Assess the total number of HH in the region (should match the census data)
-    totalResHHurban = nbOfHHperResBuilding["urban"]*df_HH_buildings['resUrbanBui']
-    # assert totalResHHurban.equals(df_HH_buildings['HH_urban'])
-    totalResHHrural = nbOfHHperResBuilding["rural"]*df_HH_buildings['resRuralBui']
-    # assert totalResHHrural.equals(df_HH_buildings['HH_rural'])
+            data_region = {
+                'region': region_name,
+                'totalBuildings': totalBuildings,
+                'urbanBuildings': urbanBuildings if totalBuildings > 0 else 0,
+                'ruralBuildings': ruralBuildings if totalBuildings > 0 else 0,
+                'shareRuralBuild': ruralBuildings / totalBuildings if totalBuildings > 0 else 0,
+                'shareUrbanBuild': urbanBuildings / totalBuildings if totalBuildings > 0 else 0,
+            }
+            data_buildings_list.append(data_region)
 
-    # Number of HH per res buildings in each region average
-    df_HH_buildings['nbOfHHperResBui_average'] = df_HH_buildings['HH_total'] / (df_HH_buildings['urbanBuildings']*df_HH_buildings['shareUrbanResBui'] +
-                                                                     df_HH_buildings['ruralBuildings'] * df_HH_buildings['shareRuralResBui'])
+        df_buildings = pd.DataFrame(data_buildings_list)
+        df_buildings.set_index('region', inplace=True)
+        df_HH_buildings = data_HH.merge(df_buildings, left_on='region', right_on='region', how='left')
 
-    # df_HH_buildings
+        df_HH_buildings['shareUrbanResBui'] = df_HH_buildings['HH_urban'] / (app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * df_HH_buildings['urbanBuildings'])
+        df_HH_buildings['shareRuralResBui'] = df_HH_buildings['HH_rural'] / (app_config.NB_OF_HH_PER_RES_BUILDING_RURAL * df_HH_buildings['ruralBuildings'])
+        df_HH_buildings.replace([np.inf, -np.inf], 0, inplace=True)
+        df_HH_buildings.fillna(0, inplace=True)
 
-if province_data == True:
-    # Assess the number of residential building
-    grid['res_urbanBui'] = grid['buildingssum'] * (grid['location'] == 'urban') * grid['NAME_1'].map(df_HH_buildings['shareUrbanResBui'])
-    grid['res_ruralBui'] = grid['buildingssum'] * (grid['location'] == 'rural') * grid['NAME_1'].map(df_HH_buildings['shareRuralResBui'])
+        df_HH_buildings['resUrbanBui'] = df_HH_buildings['urbanBuildings'] * df_HH_buildings['shareUrbanResBui']
+        df_HH_buildings['resRuralBui'] = df_HH_buildings['ruralBuildings'] * df_HH_buildings['shareRuralResBui']
+        df_HH_buildings['resTotalBui'] = df_HH_buildings['resUrbanBui'] + df_HH_buildings['resRuralBui']
 
-"""#### National data available only"""
-
-if province_data == False:
-    # Census data: adjust to the country
-    data_path = "Residential/Data/"
-    nationaldata_name = 'Census_Zambia_national.csv' # update name of file
-    df_nationaldata = pd.read_csv(data_path + nationaldata_name)
-
-    # Create a new dataframe that will contain the regional data
-    data_nat_HH = df_nationaldata[['Urban', 'Rural']]
-
-    # Assess total buildings
-    totalBuildings = grid['buildingssum'].sum()
-    urbanBuildings = grid[(grid['location'] == "urban")]['buildingssum'].sum()
-    ruralBuildings = grid[(grid['location'] == "rural")]['buildingssum'].sum()
-
-    # Assess the number of residential building
-    nbOfHHperResBuilding =  {"urban": 1.1, "rural": 1}  # --> to update depending on the country
-    shareResBui_urban = data_nat_HH ['Urban']/nbOfHHperResBuilding['urban']/urbanBuildings
-    shareResBui_rural = data_nat_HH ['Rural']/nbOfHHperResBuilding['rural']/ruralBuildings
-    grid['res_urbanBui'] = grid['buildingssum'] * (grid['location'] == 'urban') * shareResBui_urban
-    grid['res_ruralBui'] = grid['buildingssum'] * (grid['location'] == 'rural') * shareResBui_rural
-
-"""#### Assess number of residential households per cell"""
-
-# Assess the number of HH per cell
-grid['res_Bui'] = grid['res_urbanBui'] + grid['res_ruralBui']
-grid['HH_urban'] = grid['res_urbanBui'] * nbOfHHperResBuilding['urban']
-grid['HH_urban'] = grid['HH_urban'].fillna(0)
-grid['HH_rural'] = grid['res_ruralBui'] * nbOfHHperResBuilding['rural']
-grid['HH_rural'] = grid['HH_rural'].fillna(0)
-grid['HH_total'] = grid['HH_rural'] + grid['HH_urban']
-
-if province_data == True:
-    # Population per cell
-    df_censusdata = df_censusdata.set_index('Region')
-    # df_censusdata
-    # in each cell compute the population size = HH * HH size
-    get_size_HH = lambda row: df_censusdata.loc[row['NAME_1'], 'size_HH_' + row['location']]
-    grid['population'] = (
-        grid['HH_total'] *
-        grid.apply(get_size_HH, axis=1)
+        grid_gdf[app_config.COL_RES_URBAN_BUI] = grid_gdf.apply(
+            lambda row: row[app_config.COL_BUILDINGS_SUM] * df_HH_buildings.loc[row[app_config.COL_ADMIN_NAME], 'shareUrbanResBui']
+                        if row[app_config.COL_LOC_ASSESSED] == 'urban' and row[app_config.COL_ADMIN_NAME] in df_HH_buildings.index else 0, axis=1
         )
-    total_population = grid['population'].sum()
-    print(f"Total population: {total_population:,.0f}")
-    grid['population_urban'] = (
-        grid['HH_urban'] *
-        grid.apply(get_size_HH, axis=1)
+        grid_gdf[app_config.COL_RES_RURAL_BUI] = grid_gdf.apply(
+            lambda row: row[app_config.COL_BUILDINGS_SUM] * df_HH_buildings.loc[row[app_config.COL_ADMIN_NAME], 'shareRuralResBui']
+                        if row[app_config.COL_LOC_ASSESSED] == 'rural' and row[app_config.COL_ADMIN_NAME] in df_HH_buildings.index else 0, axis=1
         )
-    grid['population_rural'] = (
-        grid['HH_rural'] *
-        grid.apply(get_size_HH, axis=1)
+    else:
+        totalBuildings = grid_gdf[app_config.COL_BUILDINGS_SUM].sum()
+        urbanBuildings = grid_gdf[grid_gdf[app_config.COL_LOC_ASSESSED] == "urban"][app_config.COL_BUILDINGS_SUM].sum()
+        ruralBuildings = grid_gdf[grid_gdf[app_config.COL_LOC_ASSESSED] == "rural"][app_config.COL_BUILDINGS_SUM].sum()
+
+        nat_HH_urban = data_HH['Urban'].iloc[0]
+        nat_HH_rural = data_HH['Rural'].iloc[0]
+
+        shareResBui_urban = nat_HH_urban / (app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * urbanBuildings) if urbanBuildings > 0 else 0
+        shareResBui_rural = nat_HH_rural / (app_config.NB_OF_HH_PER_RES_BUILDING_RURAL * ruralBuildings) if ruralBuildings > 0 else 0
+
+        grid_gdf[app_config.COL_RES_URBAN_BUI] = grid_gdf.apply(
+            lambda row: row[app_config.COL_BUILDINGS_SUM] * shareResBui_urban if row[app_config.COL_LOC_ASSESSED] == 'urban' else 0, axis=1
         )
-    grid['population2'] = grid['population_rural'] + grid['population_urban']
-    total_population2 = grid['population2'].sum()
-    print(f"Total population: {total_population2:,.0f}")
-
-"""Assess number of residential households per cell with access to electricity"""
-
-# for each hexagon, assessment of the number of HH with access
-correction_factor_urban = 1
-grid["HHwithAccess_urb"] = grid['HH_urban'] * grid[probElec] * (grid["Status_electrified"]=='elec') * correction_factor_urban
-grid["HHwithAccess_rur"] = grid['HH_rural'] * grid[probElec] * (grid["Status_electrified"]=='elec')
-# nan_count = grid['HHwithAccess_rur'].isna().sum()
-# print(nan_count)
-grid["HHwithAccess"] = grid["HHwithAccess_urb"] + grid["HHwithAccess_rur"]
-
-grid["HHwithAccess_urb_wostatus"] = grid['HH_urban'] * grid[probElec]
-grid["HHwithAccess_rur_wostatus"] = grid['HH_rural'] * grid[probElec]
-grid["HHwithAccess_wostatus"] = grid["HHwithAccess_urb_wostatus"] + grid["HHwithAccess_rur_wostatus"]
-
-grid['HHwoAccess_urb'] = grid['HH_urban'] - grid['HHwithAccess_urb']
-grid['HHwoAccess_rur'] = grid['HH_rural'] - grid['HHwithAccess_rur']
-grid['HHwoAccess'] = grid['HHwoAccess_urb'] + grid['HHwoAccess_rur']
-
-# print(grid['HHwoAccess_rur'].sum(), grid['HHwithAccess_rur'].sum(), grid['HHwoAccess_rur'].sum()+ grid['HHwithAccess_rur'].sum(), grid['HH_rural'].sum())
-# print(grid['HHwoAccess_rur'].dtype, grid['HHwithAccess_rur'].dtype, grid['HH_rural'].dtype)
-
-if province_data == True:
-    totalHHWithAccessUrb = grid.groupby('NAME_1')['HHwithAccess_urb'].sum()
-    totalHHWithAccessRur = grid.groupby('NAME_1')['HHwithAccess_rur'].sum()
-    totalHHWithAccess = grid.groupby('NAME_1')['HHwithAccess'].sum()
-
-    totalHHWithAccessUrb_wostatus = grid.groupby('NAME_1')['HHwithAccess_urb_wostatus'].sum()
-    totalHHWithAccessRur_wostatus = grid.groupby('NAME_1')['HHwithAccess_rur_wostatus'].sum()
-    totalHHWithAccess_wostatus = grid.groupby('NAME_1')['HHwithAccess_wostatus'].sum()
-
-    df_HH_access = pd.concat([totalHHWithAccessUrb, totalHHWithAccessRur, totalHHWithAccess,totalHHWithAccessUrb_wostatus,totalHHWithAccessRur_wostatus,totalHHWithAccess_wostatus], axis=1)
-    df_HH_access.rename_axis('region', inplace=True)
-    df_HH_buildings = df_HH_buildings.merge(df_HH_access, left_on='region', right_on='region')
-    df_HH_buildings
-
-if province_data == True:
-    # Add national results
-    df_sum = df_HH_buildings.sum(axis=0)  # Sum across rows
-    df_sum.name = 'National'  # Set a name for the new row
-    df_HH_buildings = pd.concat([df_HH_buildings, df_sum.to_frame().T]) # concatenate the sum Series as a new row
-    df_HH_buildings
-
-if province_data == True:
-    # in each cell compute the population with access size
-    grid['population_urban_withAccess'] = (
-        grid['HHwithAccess_urb'] *
-        grid.apply(get_size_HH, axis=1)
+        grid_gdf[app_config.COL_RES_RURAL_BUI] = grid_gdf.apply(
+            lambda row: row[app_config.COL_BUILDINGS_SUM] * shareResBui_rural if row[app_config.COL_LOC_ASSESSED] == 'rural' else 0, axis=1
         )
-    grid['population_rural_withAccess'] = (
-        grid['HHwithAccess_rur'] *
-        grid.apply(get_size_HH, axis=1)
-        )
-    grid['population_withAccess'] = grid['population_urban_withAccess'] + grid['population_rural_withAccess']
-    total_population_withAccess = grid['population_withAccess'].sum()
-    print(f"Total population with access: {total_population_withAccess:,.0f}")
 
-"""Compute the resulting access rate"""
+    grid_gdf[app_config.COL_RES_BUI] = grid_gdf[app_config.COL_RES_URBAN_BUI] + grid_gdf[app_config.COL_RES_RURAL_BUI]
+    grid_gdf[app_config.COL_HH_URBAN] = (grid_gdf[app_config.COL_RES_URBAN_BUI] * app_config.NB_OF_HH_PER_RES_BUILDING_URBAN).fillna(0)
+    grid_gdf[app_config.COL_HH_RURAL] = (grid_gdf[app_config.COL_RES_RURAL_BUI] * app_config.NB_OF_HH_PER_RES_BUILDING_RURAL).fillna(0)
+    grid_gdf[app_config.COL_HH_TOTAL] = grid_gdf[app_config.COL_HH_URBAN] + grid_gdf[app_config.COL_HH_RURAL]
 
-if province_data == True:
-    # Access rate for HH
-    df_HH_buildings['accessRateHH'] = df_HH_buildings['HHwithAccess']/df_HH_buildings['HH_total']
-    df_HH_buildings['accessRateHH_urban'] = df_HH_buildings['HHwithAccess_urb']/df_HH_buildings['HH_urban']
-    df_HH_buildings['accessRateHH_rural'] = df_HH_buildings['HHwithAccess_rur']/df_HH_buildings['HH_rural']
+    if app_config.PROVINCE_DATA_AVAILABLE:
+        data_HH_indexed = data_HH.set_index('Region') if 'Region' in data_HH.columns else data_HH
 
-    # access rate for population
-    accessRatePop_urban = grid['population_urban_withAccess'].sum()/grid['population_urban'].sum()
-    accessRatePop_rural = grid['population_rural_withAccess'].sum()/grid['population_rural'].sum()
-    accessRatePop = grid['population_withAccess'].sum()/grid['population'].sum()
-    print("Pop access rate :",f"{accessRatePop:,.0%}")
-    print("Pop access rate urban:",f"{accessRatePop_urban:,.0%}")
-    print("Pop access rate rural:",f"{accessRatePop_rural:,.0%}")
+        if not all(f"size_HH_{loc}" in data_HH_indexed.columns for loc in ["urban", "rural"]):
+            raise KeyError("Missing 'size_HH_urban' or 'size_HH_rural' in census data for population calculation.")
 
-    df_HH_buildings.to_csv('Residential/Outputs/'+"dataHH_region.csv")
-    df_HH_buildings[['accessRateHH','accessRateHH_urban','accessRateHH_rural']]
+        get_size_HH = lambda row: data_HH_indexed.loc[row[app_config.COL_ADMIN_NAME], f"size_HH_{row[app_config.COL_LOC_ASSESSED]}"] \
+                                  if row[app_config.COL_ADMIN_NAME] in data_HH_indexed.index else np.nan
+        grid_gdf[app_config.COL_POPULATION] = grid_gdf[app_config.COL_HH_TOTAL] * grid_gdf.apply(get_size_HH, axis=1)
+        total_population = grid_gdf[app_config.COL_POPULATION].sum()
+        print(f"Total population calculated: {total_population:,.0f}")
 
-"""### Step 2: assess the energy consumption per HH
+    print("Finished calculating household numbers.")
+    return grid_gdf, df_HH_buildings
+
+grid, df_HH_buildings = calculate_household_numbers(grid, config, data_HH, regions)
+df_HH_buildings
+
+"""#### Assess number of households per cell with access to electricity"""
+
+def estimate_hh_with_access(grid_gdf, app_config, df_HH_buildings):
+    """
+    Estimates the number of households with electricity access and calculates access rates.
+
+    Updates grid_gdf with columns for households with and without access.
+    If provincial data is available,
+    this DataFrame is updated with regional access summaries and saved to a CSV.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        df_HH_buildings: DataFrame for regional household summaries.
+
+    Returns:
+        tuple: (grid_gdf, df_HH_buildings)
+               - grid_gdf: Updated grid GeoDataFrame.
+               - df_HH_buildings: Updated regional summary DataFrame (or None).
+    """
+    print("Estimating households with access...")
+
+    # Ensure required columns exist
+    required_cols = [app_config.COL_HH_URBAN, app_config.COL_HH_RURAL,
+                     app_config.PROB_ELEC_COL, app_config.COL_STATUS_ELECTRIFIED]
+    for col in required_cols:
+        if col not in grid_gdf.columns:
+            raise KeyError(f"Required column '{col}' not found in grid_gdf for HH access calculation.")
+
+    grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] = (
+        grid_gdf[app_config.COL_HH_URBAN] *
+        grid_gdf[app_config.PROB_ELEC_COL] *
+        (grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec') *
+        app_config.CORRECTION_FACTOR_URBAN_HH_ACCESS
+    )
+    grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] = (
+        grid_gdf[app_config.COL_HH_RURAL] *
+        grid_gdf[app_config.PROB_ELEC_COL] *
+        (grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec')
+    )
+    grid_gdf[app_config.COL_HH_WITH_ACCESS] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] + grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR]
+
+    # HH without access
+    grid_gdf[app_config.COL_HH_WO_ACCESS_URB] = grid_gdf[app_config.COL_HH_URBAN] - grid_gdf[app_config.COL_HH_WITH_ACCESS_URB]
+    grid_gdf[app_config.COL_HH_WO_ACCESS_RUR] = grid_gdf[app_config.COL_HH_RURAL] - grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR]
+    grid_gdf[app_config.COL_HH_WO_ACCESS] = grid_gdf[app_config.COL_HH_WO_ACCESS_URB] + grid_gdf[app_config.COL_HH_WO_ACCESS_RUR]
+
+    if app_config.PROVINCE_DATA_AVAILABLE and df_HH_buildings is not None:
+        print("Aggregating HH access data by region...")
+        # Aggregate HH with access by region
+        totalHHWithAccessUrb = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS_URB].sum()
+        totalHHWithAccessRur = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS_RUR].sum()
+        totalHHWithAccess = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS].sum()
+
+        df_HH_access_summary = pd.DataFrame({
+            app_config.COL_HH_WITH_ACCESS_URB: totalHHWithAccessUrb,
+            app_config.COL_HH_WITH_ACCESS_RUR: totalHHWithAccessRur,
+            app_config.COL_HH_WITH_ACCESS: totalHHWithAccess,
+        })
+        df_HH_access_summary.rename_axis('region', inplace=True)
+        # Merge with df_HH_buildings
+        df_HH_buildings = df_HH_buildings.merge(df_HH_access_summary, left_index=True, right_index=True)
+
+        # Calculate population with access (requires df_censusdata for HH size)
+        # This part might be better placed if df_censusdata is passed directly, or HH size is already in df_HH_buildings_optional
+        if app_config.COL_POPULATION in grid_gdf.columns: # Check if population was calculated
+            # Re-using get_size_HH logic structure from calculate_household_numbers would require df_censusdata here
+            # Instead we derive pop with access from HH with access proportionally
+            # This is an approximation if HH sizes differ significantly between elec/non-elec HHs
+            grid_gdf['population_urban_withAccess'] = grid_gdf[app_config.COL_POPULATION] * (grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] / grid_gdf[app_config.COL_HH_URBAN]).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_rural_withAccess'] = grid_gdf[app_config.COL_POPULATION] * (grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] / grid_gdf[app_config.COL_HH_RURAL]).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_withAccess'] = grid_gdf['population_urban_withAccess'] + grid_gdf['population_rural_withAccess']
+            total_population_withAccess = grid_gdf['population_withAccess'].sum()
+            print(f"Total population with access (estimated): {total_population_withAccess:,.0f}")
+
+        # Calculate access rates in df_HH_buildings
+        df_HH_buildings['accessRateHH'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS] / df_HH_buildings['HH_total']).replace([np.inf, -np.inf, np.nan], 0)
+        df_HH_buildings['accessRateHH_urban'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS_URB] / df_HH_buildings['HH_urban']).replace([np.inf, -np.inf, np.nan], 0)
+        df_HH_buildings['accessRateHH_rural'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS_RUR] / df_HH_buildings['HH_rural']).replace([np.inf, -np.inf, np.nan], 0)
+
+        # Add national summary to df_HH_buildings
+        if not df_HH_buildings.empty:
+            df_sum = df_HH_buildings[[col for col in df_HH_buildings.columns if col != app_config.COL_ADMIN_NAME]].sum(axis=0, numeric_only=True)
+            df_sum[app_config.COL_ADMIN_NAME] = 'National'
+            # Recalculate rates for National summary
+            df_sum['accessRateHH'] = df_sum[app_config.COL_HH_WITH_ACCESS] / df_sum['HH_total']
+            df_sum['accessRateHH_urban'] = df_sum[app_config.COL_HH_WITH_ACCESS_URB] / df_sum['HH_urban']
+            df_sum['accessRateHH_rural'] = df_sum[app_config.COL_HH_WITH_ACCESS_RUR] / df_sum['HH_rural']
+            df_sum = pd.DataFrame(df_sum).T.set_index(app_config.COL_ADMIN_NAME)
+            df_HH_buildings = pd.concat([df_HH_buildings, df_sum])
+
+        output_csv_path = os.path.join(app_config.RESIDENTIAL_OUTPUT_DIR, "dataHH_region.csv")
+        df_HH_buildings.to_csv(output_csv_path, index=True)
+        print(f"Regional HH summary saved to {output_csv_path}")
+        print(df_HH_buildings[['accessRateHH','accessRateHH_urban','accessRateHH_rural']].tail())
+
+
+    print("Finished estimating households with access.")
+    return grid_gdf, df_HH_buildings
+
+grid, df_HH_buildings = estimate_hh_with_access(grid, config, df_HH_buildings)
+
+"""### Step 2: assess the electricity consumption per HH
 
 #### Method 1: link the energy consumption to rwi through a logistic function
 """
@@ -672,27 +851,68 @@ plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 plt.show()
 
-# solve the equation so that the energy consumption per HH matches total energy demand
-from scipy.optimize import fsolve
+def calculate_energy_per_hh_method1(grid_gdf, app_config, total_residential_elec_GWh):
+    """
+    Calculates energy per household using RWI-based logistic function
 
-# variable for the relatioship between rwi and E
-E_threshold = 4656 # adjust threshold to country
-alpha = E_threshold / 0.1 - 1  # alpha set so that E_HH = 7 kWh for the lowest tier
+    This method normalizes the Relative Wealth Index (RWI), then solves for a
+    parameter `k` in a logistic function to ensure the total calculated energy
+    matches UN statistics. It adds a column for the calculated energy per household.
 
-def func(x):
-    e_hh = E_threshold / (1 + alpha * np.exp(-x  * grid['rwi_norm']))
-    res_energy_assessed = e_hh * grid ['HHwithAccess']
-    return res_energy_assessed.sum()/10**6- total_residentialenergy_GWh
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        total_residential_energy_gwh: Total national residential energy (GWh) from UN stats.
 
-# Use scipy to solve the equation to find k
-k_initial_guess = 5
-k_solution = fsolve(func, k_initial_guess)
-print(k_solution)
+    Returns:
+        GeoDataFrame: grid_gdf with added column for energy per household (Method 1).
+    """
+    print("Calculating energy per HH (Method 1: RWI-logistic)...")
+
+    if app_config.COL_RWI_MEAN not in grid_gdf.columns:
+        raise KeyError(f"Required column '{app_config.COL_RWI_MEAN}' not found for RWI normalization.")
+
+    rwi_min = grid_gdf[app_config.COL_RWI_MEAN].min()
+    rwi_max = grid_gdf[app_config.COL_RWI_MEAN].max()
+    if (rwi_max - rwi_min) == 0:
+        grid_gdf[app_config.COL_RWI_NORM] = 0.5
+        print("Warning: RWI min and max are equal. Normalized RWI set to 0.5.")
+    else:
+        grid_gdf[app_config.COL_RWI_NORM] = (grid_gdf[app_config.COL_RWI_MEAN] - rwi_min) / (rwi_max - rwi_min)
+
+    alpha = app_config.LOGISTIC_E_THRESHOLD / app_config.LOGISTIC_ALPHA_DERIVATION_THRESHOLD - 1
+
+    if app_config.COL_HH_WITH_ACCESS not in grid_gdf.columns:
+        raise KeyError(f"Required column '{app_config.COL_HH_WITH_ACCESS}' not found for fsolve.")
+
+    def func_solve_k(k_var):
+        # Calculates total energy based on k_var and compares to UN total.
+        e_hh = app_config.LOGISTIC_E_THRESHOLD / (1 + alpha * np.exp(-k_var * grid_gdf[app_config.COL_RWI_NORM]))
+        res_energy_assessed = (e_hh * grid_gdf[app_config.COL_HH_WITH_ACCESS]).sum()
+        return res_energy_assessed / 1e6 - total_residential_elec_GWh # kWh to GWh
+
+    try:
+        k_solution = fsolve(func_solve_k, app_config.LOGISTIC_K_INITIAL_GUESS)
+        # print(f"Solved k for logistic function: {k_solution[0]:.4f}")
+        k_to_use = k_solution[0]
+    except Exception as e:
+        print(f"Error solving for k in RWI-logistic method: {e}. Using initial guess: {app_config.LOGISTIC_K_INITIAL_GUESS}")
+        k_to_use = app_config.LOGISTIC_K_INITIAL_GUESS
+
+    grid_gdf[app_config.COL_RES_ELEC_PER_HH_LOG] = app_config.LOGISTIC_E_THRESHOLD / (
+        1 + alpha * np.exp(-k_to_use * grid_gdf[app_config.COL_RWI_NORM])
+    )
+    print("Finished calculating energy per HH (Method 1).")
+    return grid_gdf, k_to_use
+
+grid, k_to_use = calculate_energy_per_hh_method1(grid, config, total_residential_elec_GWh)
 
 # create the curve linking energy consumption per HH and rwi
 rwi_values = rwi_bins # rwi value groups
-k = k_solution  # Adjust this constant for the desired curve steepness
-E_HH_values = E_threshold / (1 + alpha * np.exp(-k * np.array(rwi_values)))
+k = k_to_use  # Adjust this constant for the desired curve steepness
+E_threshold = config.LOGISTIC_E_THRESHOLD
+alpha = config.LOGISTIC_E_THRESHOLD / config.LOGISTIC_ALPHA_DERIVATION_THRESHOLD - 1
+E_HH_values = config.LOGISTIC_E_THRESHOLD / (1 + alpha * np.exp(-k * np.array(rwi_values)))
 # print(E_threshold / (1 + alpha * np.exp(-k  * 0)))
 # Create the bar plot
 plt.figure(figsize=(10, 6))
@@ -723,133 +943,235 @@ plt.show()
 
 """#### Method 2: use data coming from the DHS survey"""
 
-importlib.reload(estimate_energy_rwi_link_national_new)
-import Residential.HouseholdEnergyUse
-import importlib
-importlib.reload(Residential.HouseholdEnergyUse)
-from Residential.HouseholdEnergyUse import estimate_energy_rwi_link_national_new
-data_path = 'Residential/Data/DHSSurvey/'
-figuresDHS_folder = 'Residential/Figures/'
-grid = estimate_energy_rwi_link_national_new.estimate_energy_rwi_link_national(grid, data_path, figuresDHS_folder)
-grid['ResEnergyPerHH_DHS'] = grid['Energy demand rural'] + grid['Energy demand urban']
-grid.to_csv(out_path + "\\" + "data_resDHS.csv")
+def calculate_energy_per_hh_method2(grid_gdf, app_config, estimate_energy_func):
+    """
+    Calculates energy per household using Method 2 (DHS survey-based).
 
-"""### Step 3: assess energy consumption per cell"""
+    This method calls an external script (`estimate_energy_rwi_link_national`)
+    which processes DHS data to link RWI and electricity access to electricity consumption.
 
-# Assess the energy Consumption assessment per cell
-averageRwi = grid['rwi'].mean()
-weightedRwi_norm = grid['rwi_norm'] * (grid ['HH_urban'] + grid ['HH_rural'])
-averageRwi_norm = weightedRwi_norm.sum()/ (grid ['HH_urban'].sum() + grid ['HH_rural'].sum())
-# print(averageRwi_norm)
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        estimate_energy_func: The imported `estimate_energy_rwi_link_national` function.
 
-grid["ResEnergyPerHH_meth1"] = grid.apply(
-    lambda row: row['ResEnergyPerHH_log'] if row['HHwithAccess'] > 0 else 0, axis=1
-)
-grid["ResEnergyPerHH_meth2"] = grid['ResEnergyPerHH_DHS']
+    Returns:
+        GeoDataFrame: grid_gdf with added column for electricity per household (Method 2).
+    """
+    print("Calculating energy per HH (Method 2: DHS-based)...")
 
-methods = ['meth1', 'meth2']
-result_beforescaling = pd.DataFrame()
-result_afterscaling = pd.DataFrame()
-for method in methods:
-    grid["ResEnergy_kWh_" + method] = grid["HHwithAccess"] * grid["ResEnergyPerHH_" + method]
-    result_beforescaling[method] = grid.groupby('NAME_1')['ResEnergy_kWh_' + method].sum() / 10**6 # conversion in GWh
-    total_residentialenergy_assessed = result_beforescaling[method].sum() #res_energy_assessed
-    scaling_factor = total_residentialenergy_GWh/total_residentialenergy_assessed
-    result_afterscaling[method] = result_beforescaling[method] * scaling_factor
-    grid["ResEnergy_kWh_" + method + "_scaled"] = grid["ResEnergy_kWh_" + method] * scaling_factor
-result_beforescaling
+    dhs_survey_folder = os.path.join(app_config.RESIDENTIAL_DATA_PATH, "DHSSurvey/")
 
-# result = pd.DataFrame.from_dict(result_beforescaling)
+    grid_gdf = estimate_energy_func(
+        grid_gdf,
+        dhs_survey_folder,
+        app_config.FIGURES_DHS_FOLDER,
+        make_figure=app_config.DHS_MAKE_FIGURE,
+        recalculate_energies=app_config.DHS_RECALCULATE_ENERGIES,
+        simulate_cell_groups=app_config.DHS_SIMULATE_CELL_GROUPS,
+        recalculate_energy_perhh=app_config.DHS_RECALCULATE_ENERGY_PERHH
+    )
 
-result_beforescaling.sum(axis=0)
+    col_elec_rural = 'elec_demand_kWh_rural'
+    col_elec_urban = 'elec_demand_kWh_urban'
 
-result_afterscaling
+    if col_elec_rural not in grid_gdf.columns or col_elec_urban not in grid_gdf.columns:
+        raise KeyError(f"Expected columns '{col_elec_rural}' or '{col_elec_urban}' not found after DHS estimation.")
+
+    grid_gdf[app_config.COL_RES_ELEC_PER_HH_DHS] = grid_gdf[col_elec_rural] + grid_gdf[col_elec_urban]
+
+    print("Finished calculating energy per HH (Method 2).")
+    return grid_gdf
+
+import Residential.HouseholdEnergyUse.estimate_energy_rwi_link_national_new
+
+# 1. Reload the entire module file
+importlib.reload(Residential.HouseholdEnergyUse.estimate_energy_rwi_link_national_new)
+
+# 2. After reloading, re-import the specific function to get the updated version
+from Residential.HouseholdEnergyUse.estimate_energy_rwi_link_national_new import estimate_energy_rwi_link_national
+grid = calculate_energy_per_hh_method2(grid, config, estimate_energy_rwi_link_national)
+
+"""### Step 3: assess electricity consumption per cell"""
+
+def calculate_total_residential_electricity(grid_gdf, app_config, total_residential_energy_gwh):
+    """
+    Calculates total residential energy per cell for different methods and scales to UN stats.
+
+    This function takes the per-household energy estimates from Method 1 (RWI-logistic)
+    and Method 2 (DHS-based), calculates the total energy per grid cell for each method,
+    and then scales these totals so that the national aggregate matches UN statistics.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid with per-HH energy estimates.
+        app_config: The configuration module.
+        total_residential_energy_gwh: Total national residential energy (GWh) from UN stats.
+
+    Returns:
+        GeoDataFrame: grid_gdf with added columns for raw and scaled total residential energy.
+    """
+    print("Calculating total residential energy and scaling...")
+
+    # Ensure required input columns exist
+    required_cols_meth1 = [app_config.COL_RES_ELEC_PER_HH_LOG, app_config.COL_HH_WITH_ACCESS]
+    required_cols_meth2 = [app_config.COL_RES_ELEC_PER_HH_DHS, app_config.COL_HH_WITH_ACCESS]
+
+    for col in required_cols_meth1:
+        if col not in grid_gdf.columns: raise KeyError(f"Method 1: Column '{col}' not found.")
+    for col in required_cols_meth2:
+        if col not in grid_gdf.columns: raise KeyError(f"Method 2: Column '{col}' not found.")
+
+    # For method 1, assign electricity per HH where access > 0, else 0
+    grid_gdf["ElecPerHH_kWh_meth1"] = grid_gdf.apply(
+        lambda row: row[app_config.COL_RES_ELEC_PER_HH_LOG] if row[app_config.COL_HH_WITH_ACCESS] > 0 else 0, axis=1
+    )
+    # For method 2, the ElectricityPerHH_DHS is already calculated considering access within its script.
+    grid_gdf["ElecPerHH_kWh_meth2"] = grid_gdf[app_config.COL_RES_ELEC_PER_HH_DHS]
+
+    methods_map = {
+        'meth1': {'per_hh_col': "ElecPerHH_kWh_meth1", 'output_col_scaled': app_config.COL_RES_ELEC_KWH_METH1_SCALED, 'raw_total_col': app_config.COL_RES_ELEC_KWH_METH1},
+        'meth2': {'per_hh_col': "ElecPerHH_kWh_meth2", 'output_col_scaled': app_config.COL_RES_ELEC_KWH_METH2_SCALED, 'raw_total_col': app_config.COL_RES_ELEC_KWH_METH2}
+    }
+
+    results_beforescaling_summary = {}
+    results_afterscaling_summary = {}
+
+    for method_key, details in methods_map.items():
+        # Calculate raw total energy per cell (kWh)
+        grid_gdf[details['raw_total_col']] = grid_gdf[app_config.COL_HH_WITH_ACCESS] * grid_gdf[details['per_hh_col']]
+
+        # Aggregate by administrative region (e.g., NAME_1) if COL_ADMIN_NAME is present
+        if app_config.COL_ADMIN_NAME in grid_gdf.columns:
+            regional_sum_gwh = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[details['raw_total_col']].sum() / 10**6 # kWh to GWh
+            results_beforescaling_summary[method_key] = regional_sum_gwh
+            total_assessed_gwh = regional_sum_gwh.sum()
+        else: # No admin column, sum all cells
+            total_assessed_gwh = grid_gdf[details['raw_total_col']].sum() / 10**6 # kWh to GWh
+            results_beforescaling_summary[method_key] = pd.Series({"National": total_assessed_gwh})
+
+
+        if total_assessed_gwh == 0:
+            print(f"Warning: Total assessed energy for {method_key} is 0. Scaling factor cannot be computed. Scaled energy will be 0.")
+            scaling_factor = 0
+        else:
+            scaling_factor = total_residential_energy_gwh / total_assessed_gwh
+
+        print(f"Method {method_key}: Total Assessed = {total_assessed_gwh:.2f} GWh, UN Stats = {total_residential_energy_gwh:.2f} GWh, Scaling Factor = {scaling_factor:.4f}")
+
+        grid_gdf[details['output_col_scaled']] = grid_gdf[details['raw_total_col']] * scaling_factor
+
+        if app_config.COL_ADMIN_NAME in grid_gdf.columns:
+            results_afterscaling_summary[method_key] = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[details['output_col_scaled']].sum() / 10**6
+        else:
+            results_afterscaling_summary[method_key] = pd.Series({"National": grid_gdf[details['output_col_scaled']].sum() / 10**6})
+
+    print("\nSummary of energy consumption before scaling (GWh):")
+    print(pd.DataFrame(results_beforescaling_summary))
+    print("\nSummary of energy consumption after scaling (GWh):")
+    print(pd.DataFrame(results_afterscaling_summary))
+
+    print("Finished calculating and scaling total residential energy.")
+    return grid_gdf
+
+grid = calculate_total_residential_electricity(grid, config, total_residential_elec_GWh)
 
 """### Compare access rates to Falchetta dataset"""
 
-def calculate_tier_share_method(grid, method, HHwithaccess, HHwoaccess, category_total):
-    """Calculates tier share for a given category.
+def compare_access_to_falchetta(grid_gdf, app_config):
+    """
+    Compares calculated residential energy consumption tiers with Falchetta dataset tiers.
+
+    This function bins calculated per-household energy into tiers and compares the
+    distribution of households across these tiers against pre-loaded Falchetta tier data.
+    It also performs a similarity analysis between the DHS-based calculated tiers and
+    Falchetta's majority tier.
 
     Args:
-        grid: The DataFrame containing the data.
-        category_prefix: The prefix for the category columns (e.g., 'HHwithAccess').
-        category_total: The total number of households in the category.
+        grid_gdf: GeoDataFrame of the hexagonal grid with energy consumption data.
+        app_config: The configuration module.
 
     Returns:
-        A Series containing the tier share for the category.
+        GeoDataFrame: grid_gdf, potentially with added columns for tiering/comparison.
     """
+    print("Comparing access tiers to Falchetta dataset...")
 
-    tier_share = grid.groupby('tiers_' + method)[HHwithaccess].sum()
-    tier_share.iloc[0] += grid[HHwoaccess].sum()
-    return tier_share / category_total
+    def calculate_tier_share_method(data_grid, method_suffix, hh_with_access_col, hh_wo_access_col, category_total_val):
+        # Helper for tier share calculation
+        tier_col_name = f'tiers_{method_suffix}'
+        if tier_col_name not in data_grid.columns:
+            # print(f"Warning: Tier column '{tier_col_name}' not found for method '{method_suffix}'.")
+            return pd.Series(dtype=float)
+        if category_total_val == 0: return pd.Series(dtype=float)
 
+        tier_share = data_grid.groupby(tier_col_name)[hh_with_access_col].sum()
+        if 0 in tier_share.index :
+            tier_share.loc[0] += data_grid[hh_wo_access_col].sum()
+        else:
+            tier_share.loc[0] = data_grid[hh_wo_access_col].sum()
+        return tier_share.sort_index() / category_total_val
 
-# Define the energy consumption level for the different tiers
-bins_tiers = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, np.inf]
+    bins_tiers = app_config.BINS_TIERS_ENERGY
+    tier_labels = range(len(bins_tiers) - 1)
 
-# Define the different categories
-categories = [('national', 'HHwithAccess', 'HHwoAccess', 'HH_total'),
-              ('urban', 'HHwithAccess_urb', 'HHwoAccess_urb', 'HH_urban'),
-              ('rural', 'HHwithAccess_rur', 'HHwoAccess_rur', 'HH_rural')]
+    categories_summary = {
+        'national': app_config.COL_HH_TOTAL, 'urban': app_config.COL_HH_URBAN, 'rural': app_config.COL_HH_RURAL
+    }
 
-tiers_falchetta_maj = pd.DataFrame()
-tiers_falchetta_maj = grid.groupby('tiers_falchetta_maj')[['HH_total', 'HH_urban', 'HH_rural']].sum()
-tiers_falchetta_maj = tiers_falchetta_maj / tiers_falchetta_maj.sum()
-# for category, HHwithaccess, HHwoaccess, total_col in categories:
-#     tier_share = calculate_tier_share_method(grid, 'falchetta', HHwithaccess, HHwoaccess, grid[total_col].sum())
-#     tiers_falchetta[category] = tier_share
-tiers_falchetta_maj
+    # Falchetta dataset
+    for col_type in [app_config.COL_TIERS_FALCHETTA_MAJ, app_config.COL_TIERS_FALCHETTA_MEAN]:
+        if col_type in grid_gdf.columns:
+            tiers_summary_df = pd.DataFrame()
+            for cat_name, total_hh_col in categories_summary.items():
+                 if total_hh_col in grid_gdf.columns and grid_gdf[total_hh_col].sum() > 0:
+                    cat_sum = grid_gdf.groupby(col_type)[total_hh_col].sum()
+                    tiers_summary_df[cat_name] = cat_sum / cat_sum.sum()
+            print(f"\nFalchetta Tiers Summary ({col_type}):")
+            print(tiers_summary_df.fillna(0))
 
-tiers_falchetta_mean = pd.DataFrame()
-tiers_falchetta_mean = grid.groupby('tiers_falchetta_mean')[['HH_total', 'HH_urban', 'HH_rural']].sum()
-tiers_falchetta_mean = tiers_falchetta_mean / tiers_falchetta_mean.sum()
-# for category, HHwithaccess, HHwoaccess, total_col in categories:
-#     tier_share = calculate_tier_share_method(grid, 'falchetta', HHwithaccess, HHwoaccess, grid[total_col].sum())
-#     tiers_falchetta[category] = tier_share
-tiers_falchetta_mean
+    # Our methods
+    methods_to_compare = {
+        'meth1': app_config.COL_RES_ELEC_PER_HH_LOG,
+        'meth2': "ElecPerHH_kWh_meth2"
+    }
+    categories_for_comparison = [
+        ('national', app_config.COL_HH_WITH_ACCESS, app_config.COL_HH_WO_ACCESS, app_config.COL_HH_TOTAL),
+        ('urban', app_config.COL_HH_WITH_ACCESS_URB, app_config.COL_HH_WO_ACCESS_URB, app_config.COL_HH_URBAN),
+        ('rural', app_config.COL_HH_WITH_ACCESS_RUR, app_config.COL_HH_WO_ACCESS_RUR, app_config.COL_HH_RURAL)
+    ]
 
-tiers_falchetta_withHH = pd.DataFrame()
-for category, HHwithaccess, HHwoaccess, total_col in categories:
-    tier_share = calculate_tier_share_method(grid, 'falchetta_maj', HHwithaccess, HHwoaccess, grid[total_col].sum())
-    tiers_falchetta_withHH[category] = tier_share
-tiers_falchetta_withHH
+    for method_key, energy_col_name in methods_to_compare.items():
+        if energy_col_name not in grid_gdf.columns:
+            print(f"Warning: Energy column '{energy_col_name}' for method '{method_key}' not found.")
+            continue
 
-# Calculate tier shares for the different methods
-df_tiers_data = pd.DataFrame()
-for method in methods:
-    df_tiers_data = pd.DataFrame()
-    grid['tiers_' + method] = pd.cut(grid['ResEnergyPerHH_' + method], bins_tiers, labels=range(len(bins_tiers)-1))
-    grid['tiers_' + method] = grid['tiers_' + method].fillna(0) # Fill NaN values with "0"
+        grid_gdf[f'tiers_{method_key}'] = pd.cut(grid_gdf[energy_col_name], bins=bins_tiers, labels=tier_labels, right=False)
+        grid_gdf[f'tiers_{method_key}'] = grid_gdf[f'tiers_{method_key}'].fillna(0).astype(int)
 
-    for category, HHwithaccess, HHwoaccess, total_col in categories:
-        tier_share = calculate_tier_share_method(grid, method, HHwithaccess, HHwoaccess, grid[total_col].sum())
-        df_tiers_data[category] = tier_share
+        df_tiers_data = pd.DataFrame()
+        for cat_name, hh_access_col, hh_no_access_col, total_hh_col in categories_for_comparison:
+            if all(c in grid_gdf.columns for c in [hh_access_col, hh_no_access_col, total_hh_col]):
+                cat_total_val = grid_gdf[total_hh_col].sum()
+                if cat_total_val > 0:
+                    tier_share_series = calculate_tier_share_method(grid_gdf, method_key, hh_access_col, hh_no_access_col, cat_total_val)
+                    df_tiers_data[cat_name] = tier_share_series
 
-    # df_tiers_data = pd.concat([df_tiers_data_national, df_tiers_data_urban, df_tiers_data_rural], axis=1)
-    print(df_tiers_data)
+        print(f"\nTier Shares for Method '{method_key}':")
+        print(df_tiers_data.fillna(0))
 
-# comparison between Falchetta and our data
-grid['tiers_DHS'] = grid['tiers_meth2']
-grid['tiers_DHS_adjusted'] = grid['tiers_DHS'].where(grid['tiers_DHS'] != 5, 4) # adjustment to only have 4 tiers
+    if f'tiers_meth2' in grid_gdf.columns and app_config.COL_TIERS_FALCHETTA_MAJ in grid_gdf.columns:
+        grid_gdf['tiers_DHS_adjusted'] = grid_gdf['tiers_meth2'].where(grid_gdf['tiers_meth2'] != 5, 4)
+        grid_gdf['Similarity_Falchetta_DHS'] = grid_gdf['tiers_DHS_adjusted'] == grid_gdf[app_config.COL_TIERS_FALCHETTA_MAJ]
+        grid_gdf['Difference_Falchetta_DHS'] = abs(pd.to_numeric(grid_gdf['tiers_DHS_adjusted']) - pd.to_numeric(grid_gdf[app_config.COL_TIERS_FALCHETTA_MAJ]))
 
-# Create a new column 'Similarity' to indicate if values are the same
-grid['Similarity'] = grid['tiers_DHS_adjusted'] == grid['tiers_falchetta_maj']
+        print("\nSimilarity Analysis (Falchetta vs DHS-Method2):")
+        print(f"Number of lines with similar tiers: {grid_gdf['Similarity_Falchetta_DHS'].sum()}")
+        print(f"Mean difference in tiers: {grid_gdf['Difference_Falchetta_DHS'].mean():.2f}")
+        print(f"Median difference in tiers: {grid_gdf['Difference_Falchetta_DHS'].median():.2f}")
 
-# Count the number of lines with similar values
-num_similar = grid['Similarity'].sum()
+    print("Finished Falchetta comparison.")
+    return grid_gdf
 
-# Calculate the absolute difference between A and B
-grid['Difference'] = abs(pd.to_numeric(grid['tiers_DHS_adjusted']) - grid['tiers_falchetta_maj'])
-
-# Analyze the distribution of differences (e.g., mean, median, mode)
-mean_difference = grid['Difference'].mean()
-median_difference = grid['Difference'].median()
-mode_difference = grid['Difference'].mode()
-
-print("Number of lines with similar values:", num_similar)
-print("Mean difference:", mean_difference)
-print("Median difference:", median_difference)
-print("Mode difference:", mode_difference)
+grid = compare_access_to_falchetta(grid, config)
 
 """### Final grid"""
 
