@@ -26,16 +26,15 @@ def logistic(x, a, b, x0):
 np.random.seed(42)
 
 
-def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
+def estimate_energy_rwi_link_national(grid, data_folder, figures_folder, make_figure = True, recalculate_energies = True,
+                                      simulate_cell_groups = True, recalculate_energy_perhh = False):
     np.random.seed(42)
 
     # To produce graphs of the simulated cell groups, set simulate_cell_groups = True
     # To produce graphs showing the fitting function, set simulate_cell_groups = False and recalculate_energies = True
-    
-    make_figure = True
-    recalculate_energies = True # If false will just use any existing value in grid data
-    simulate_cell_groups = True  # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
-    recalculate_energy_perhh = False
+
+    # recalculate_energies = True # If false will just use any existing value in grid data
+    # simulate_cell_groups = True  # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
 
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
@@ -152,16 +151,16 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder):
                     param,cov = curve_fit(logistic,np.stack((rwi_group.flatten(),f_group.flatten())),eu_group.flatten(),p0 = param)
                 except RuntimeError:
                     print('Unable to fit rwi vs eu')
-            grid['Energy demand '+region_type[i].lower()] = energy_demand[i,:]
+            grid['elec_demand_kWh_'+region_type[i].lower()] = energy_demand[i,:]
         else:
-            eu_group = grid['Energy demand '+region_type[i].lower()][include]
+            eu_group = grid['Elec demand '+region_type[i].lower()][include]
             rwi_group = grid['Simulated group rwi '+region_type[i].lower()][include]
             f_group = f_elec.copy()
-        Etot = (grid['Energy demand '+region_type[i].lower()]*grid[col_HH]).sum()
+        Etot = (grid['elec_demand_kWh_'+region_type[i].lower()]*grid[col_HH]).sum()
         print(region_type[i]+' total = {:,.0f} GWh/year'.format(Etot*1e-6))
-        print(region_type[i]+' average per houshold = {:,.0f} kWh/year'.format(Etot/grid[col_HH_access].sum()))
-        print(region_type[i] + ' min = {:,.0f} kWh/year'.format(grid['Energy demand '+region_type[i].lower()].min()) +
-              ' max = {:,.0f} kWh/year'.format(grid['Energy demand '+region_type[i].lower()].max()))
+        print(region_type[i]+' average per household = {:,.0f} kWh/year'.format(Etot/grid[col_HH_access].sum()))
+        print(region_type[i] + ' min = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+region_type[i].lower()].min()) +
+              ' max = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+region_type[i].lower()].max()))
         
         if make_figure:
 
