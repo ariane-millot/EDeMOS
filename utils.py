@@ -24,6 +24,7 @@ def processing_raster(name, method, clusters, filepath=None):
     print(datetime.datetime.now())
     return clusters
 
+
 def finalizing_rasters(workspace, clusters, crs):
     output = workspace + r'\placeholder.geojson'
     with open(output, "w") as dst:
@@ -37,6 +38,25 @@ def finalizing_rasters(workspace, clusters, crs):
     
     print(datetime.datetime.now())
     return clusters
+
+
+def convert_features_to_geodataframe(features, crs):
+    """
+    Directly converts an iterable of GeoJSON-like features into a GeoDataFrame.
+
+    Args:
+        features: An iterable (list, generator) of GeoJSON Feature dictionaries.
+        crs: The Coordinate Reference System to assign to the new GeoDataFrame.
+
+    Returns:
+        geopandas.GeoDataFrame: A GeoDataFrame created from the features.
+    """
+    print("Converting features to GeoDataFrame...")
+
+    gdf = gpd.GeoDataFrame.from_features(features, crs=crs)
+
+    print(datetime.datetime.now())
+    return gdf
 
 
 def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, str=None):
