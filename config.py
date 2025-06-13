@@ -3,6 +3,19 @@ from pathlib import Path
 
 ROOT_DIR = Path( __file__ ).parent.absolute()
 
+# -----------------------------------------------------------------------------
+# AREA OF INTEREST CHOICE -- to update with the country
+# -----------------------------------------------------------------------------
+
+# Define area of interest
+AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
+ADMIN_GPKG = "gadm41_ZMB.gpkg"
+
+
+# -----------------------------------------------------------------------------
+# PATHS
+# -----------------------------------------------------------------------------
+
 # Input paths
 ADMIN_PATH = ROOT_DIR / "admin"
 
@@ -11,13 +24,6 @@ OUTPUT_DIR = ROOT_DIR / "Outputs"
 # Ensure all folders for output files exist
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Specific input file names for the country
-# Define area of interest
-AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
-# REGIONS_LIST_CSV = 'Regions_list.csv'
-ADMIN_GPKG = "gadm41_ZMB.gpkg"
-H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
-
 # -----------------------------------------------------------------------------
 # COORDINATE REFERENCE SYSTEMS
 # -----------------------------------------------------------------------------
@@ -25,7 +31,7 @@ CRS_WGS84 = CRS("EPSG:4326") # Original WGS84 coordinate system
 CRS_PROJ = CRS("EPSG:32736") # Projection system for the selected country - see http://epsg.io/ for more info
 
 # -----------------------------------------------------------------------------
-# GENERAL PARAMETERS
+# GENERAL PARAMETERS - HEXAGONS
 # -----------------------------------------------------------------------------
 
 # Admin boundaries
@@ -36,14 +42,14 @@ ADMIN_REGION_COLUMN_NAME = "NAME_1"
 # hexagon size
 HEX_SIZE = 5 ## resolution info here https://h3geo.org/docs/core-library/restable
 
+# HEXAGON FILE NAME
+H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
 
 # -----------------------------------------------------------------------------
 # RESIDENTIAL PARAMETERS
 # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# DIRECTORY AND FILE PATHS
-# -----------------------------------------------------------------------------
+# File paths
 
 # Input paths
 GRID_PATH = ROOT_DIR / "Grid" # For MV/HV lines
@@ -99,8 +105,10 @@ DHS_HOUSEHOLD_DATA_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "household_data.c
 DHS_EMPLOYEE_WOMEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_women.csv"
 DHS_EMPLOYEE_MEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_men.csv"
 DHS_WORKING_POP_SHARE_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "pop15-49_share.csv"
-# Add other DHS files if they are directly loaded by the main script in the future
-# e.g. employee_survey_women.csv, employee_survey_men.csv, pop15-49_share.csv for services calculation
+
+# Ensure all folders for output files exist
+RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
+FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # COORDINATE REFERENCE SYSTEMS
@@ -110,13 +118,9 @@ DHS_WORKING_POP_SHARE_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "pop15-49_shar
 TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S) - check if this is consistent or should be same as CRS_PROJ
 
 # -----------------------------------------------------------------------------
-# GENERAL PARAMETERS
+# PARAMETERS ENERGY BALANCE
 # -----------------------------------------------------------------------------
 
-# # Admin boundaries
-# ADMIN_LAYER_REGION = "ADM_ADM_1"
-# ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
-# ADMIN_REGION_COLUMN_NAME = "NAME_1"
 
 # UN Energy Balance codes and year
 UN_ELEC_CODE = "B07_EL"
@@ -179,10 +183,6 @@ COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
 COL_SER_ELEC_KWH_EMP = 'Ser_elec_kWh_Emp'
 COL_SER_ELEC_KWH_FINAL = 'Ser_elec_kWh_final' # Final services result
-
-# Ensure all folders for output files exist
-RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
-FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
 
 # -----------------------------------------------------------------------------
