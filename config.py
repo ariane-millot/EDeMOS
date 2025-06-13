@@ -1,36 +1,15 @@
-import os
 from pyproj import CRS
+from pathlib import Path
 
-# -----------------------------------------------------------------------------
-# DIRECTORY AND FILE PATHS
-# -----------------------------------------------------------------------------
-# Root directory (assuming config.py is in the root or a known location)
-# For scripts in subdirectories, they might need to adjust paths accordingly, 
-# or this can be set dynamically. For now, let's assume ROOT_DIR is the project root.
-# ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '.')) # More robust way to define ROOT_DIR
-import sys
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'DemandMappingZambia':
-  sys.path.insert(0, os.path.dirname(currentdir))
-  os.chdir('..')
-  print(f'Move to {os.getcwd()}')
-ROOT_DIR = os.path.abspath(os.curdir)
+ROOT_DIR = Path( __file__ ).parent.absolute()
 
 # Input paths
-ADMIN_PATH = os.path.join(ROOT_DIR, "admin")
-GRID_PATH = os.path.join(ROOT_DIR, "Grid") # For MV/HV lines
-ENERGY_BALANCE_PATH = os.path.join(ROOT_DIR, "EnergyBalance")
-RESIDENTIAL_DATA_PATH = os.path.join(ROOT_DIR, "Residential", "Data")
-WORLDPOP_PATH = os.path.join(RESIDENTIAL_DATA_PATH, "WorldPop")
-LIGHTING_PATH = os.path.join(RESIDENTIAL_DATA_PATH, "Lighting")
-RWI_PATH = os.path.join(RESIDENTIAL_DATA_PATH, "WealthIndex")
-FALCHETTA_PATH = os.path.join(RESIDENTIAL_DATA_PATH, "Falchetta_ElecAccess")
-# GDP_PATH = os.path.join(RESIDENTIAL_DATA_PATH, "GDP") # Example if it was used
+ADMIN_PATH = ROOT_DIR / "admin"
 
 # Output paths
-OUTPUT_DIR = os.path.join(ROOT_DIR, "Outputs") # As used in building_demand.py
-RESIDENTIAL_OUTPUT_DIR = os.path.join(ROOT_DIR, "Residential", "Outputs") # As used in building_demand.py for dataHH_region.csv
-FIGURES_DHS_FOLDER = os.path.join(ROOT_DIR, "Residential", "Figures") # As used in estimate_energy_rwi_link_national_new.py
+OUTPUT_DIR = ROOT_DIR / "Outputs"
+# Ensure all folders for output files exist
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Specific input file names for the country
 # Define area of interest
@@ -38,6 +17,47 @@ AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copp
 # REGIONS_LIST_CSV = 'Regions_list.csv'
 ADMIN_GPKG = "gadm41_ZMB.gpkg"
 H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
+
+# -----------------------------------------------------------------------------
+# COORDINATE REFERENCE SYSTEMS
+# -----------------------------------------------------------------------------
+CRS_WGS84 = CRS("EPSG:4326") # Original WGS84 coordinate system
+CRS_PROJ = CRS("EPSG:32736") # Projection system for the selected country - see http://epsg.io/ for more info
+
+# -----------------------------------------------------------------------------
+# GENERAL PARAMETERS
+# -----------------------------------------------------------------------------
+
+# Admin boundaries
+ADMIN_LAYER_REGION = "ADM_ADM_1"
+ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
+ADMIN_REGION_COLUMN_NAME = "NAME_1"
+
+# hexagon size
+HEX_SIZE = 5 ## resolution info here https://h3geo.org/docs/core-library/restable
+
+
+# -----------------------------------------------------------------------------
+# RESIDENTIAL PARAMETERS
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# DIRECTORY AND FILE PATHS
+# -----------------------------------------------------------------------------
+
+# Input paths
+GRID_PATH = ROOT_DIR / "Grid" # For MV/HV lines
+ENERGY_BALANCE_PATH = ROOT_DIR / "EnergyBalance"
+RESIDENTIAL_DATA_PATH = ROOT_DIR / "Residential" / "Data"
+WORLDPOP_PATH = RESIDENTIAL_DATA_PATH / "WorldPop"
+LIGHTING_PATH = RESIDENTIAL_DATA_PATH / "Lighting"
+RWI_PATH = RESIDENTIAL_DATA_PATH / "WealthIndex"
+FALCHETTA_PATH = RESIDENTIAL_DATA_PATH / "Falchetta_ElecAccess"
+# GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP") # Example if it was used
+
+# Output paths
+RESIDENTIAL_OUTPUT_DIR = ROOT_DIR / "Residential" / "Outputs" # As used in building_demand.py for dataHH_region.csv
+FIGURES_DHS_FOLDER = ROOT_DIR / "Residential" / "Figures" # As used in estimate_energy_rwi_link_national_new.py
 
 # WorldPop files
 # Link: https://apps.worldpop.org/peanutButter/
@@ -66,38 +86,37 @@ UN_ENERGY_BALANCE_CSV = "UNSD+DF_UNData_EnergyBalance+1.0_Zambia.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = os.path.join(GRID_PATH, "Zambia - MVLines", "Zambia - MVLines.shp")
-HV_LINES_SHP = os.path.join(GRID_PATH, "Zambia - HVLines", "HVLines.shp")
+MV_LINES_SHP = GRID_PATH / "Zambia - MVLines" / "Zambia - MVLines.shp"
+HV_LINES_SHP = GRID_PATH / "Zambia - HVLines" / "HVLines.shp"
 
 # Census data files
 PROVINCE_DATA_AVAILABLE = True
-CENSUS_ZAMBIA_PROVINCE_CSV = os.path.join(RESIDENTIAL_DATA_PATH, "Census", "Census_Zambia.csv")
-CENSUS_ZAMBIA_NATIONAL_CSV = os.path.join(RESIDENTIAL_DATA_PATH,"Census",  "Census_Zambia_National.csv")
+CENSUS_ZAMBIA_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / "Census_Zambia.csv"
+CENSUS_ZAMBIA_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" /  "Census_Zambia_National.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
-DHS_HOUSEHOLD_DATA_CSV = os.path.join(RESIDENTIAL_DATA_PATH, "DHSSurvey", "household_data.csv") 
-DHS_EMPLOYEE_WOMEN_CSV = os.path.join(RESIDENTIAL_DATA_PATH, "DHSSurvey", "employee_survey_women.csv")
-DHS_EMPLOYEE_MEN_CSV = os.path.join(RESIDENTIAL_DATA_PATH, "DHSSurvey", "employee_survey_men.csv")
-DHS_WORKING_POP_SHARE_CSV = os.path.join(RESIDENTIAL_DATA_PATH, "DHSSurvey", "pop15-49_share.csv")
+DHS_HOUSEHOLD_DATA_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "household_data.csv"
+DHS_EMPLOYEE_WOMEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_women.csv"
+DHS_EMPLOYEE_MEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_men.csv"
+DHS_WORKING_POP_SHARE_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "pop15-49_share.csv"
 # Add other DHS files if they are directly loaded by the main script in the future
 # e.g. employee_survey_women.csv, employee_survey_men.csv, pop15-49_share.csv for services calculation
 
 # -----------------------------------------------------------------------------
 # COORDINATE REFERENCE SYSTEMS
 # -----------------------------------------------------------------------------
-CRS_WGS84 = CRS("EPSG:4326")
-# CRS_PROJ = CRS("EPSG:32736")
-CRS_PROJ = CRS("EPSG:32736") # Zambia UTM Zone 36S
+# CRS_WGS84 = CRS("EPSG:4326")
+# CRS_PROJ = CRS("EPSG:32736") # Zambia UTM Zone 36S
 TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S) - check if this is consistent or should be same as CRS_PROJ
 
 # -----------------------------------------------------------------------------
 # GENERAL PARAMETERS
 # -----------------------------------------------------------------------------
 
-# Admin boundaries
-ADMIN_LAYER_REGION = "ADM_ADM_1"
-ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
-ADMIN_REGION_COLUMN_NAME = "NAME_1"
+# # Admin boundaries
+# ADMIN_LAYER_REGION = "ADM_ADM_1"
+# ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
+# ADMIN_REGION_COLUMN_NAME = "NAME_1"
 
 # UN Energy Balance codes and year
 UN_ELEC_CODE = "B07_EL"
@@ -107,7 +126,7 @@ UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specifi
 UN_ENERGY_YEAR = 2019
 
 # -----------------------------------------------------------------------------
-# COLUMN NAMES
+# COLUMN NAMES FOR GRID
 # -----------------------------------------------------------------------------
 # Input columns from H3 grid
 COL_H3_ID = 'h3_index' # Or whatever the ID column in h3_grid_at_hex.shp is, e.g. 'id'
@@ -134,6 +153,8 @@ COL_HH_URBAN = 'HH_urban'
 COL_HH_RURAL = 'HH_rural'
 COL_HH_TOTAL = 'HH_total'
 COL_POPULATION = 'population'
+COL_POP_URBAN = 'pop_urban'
+COL_POP_RURAL = 'pop_rural'
 
 COL_HH_WITH_ACCESS_URB = 'HHwithAccess_urb'
 COL_HH_WITH_ACCESS_RUR = 'HHwithAccess_rur'
@@ -152,34 +173,21 @@ COL_RES_ELEC_KWH_METH2_SCALED = 'ResElec_kWh_meth2_scaled' # Final residential r
 
 COL_SER_BUI = 'serBui'
 COL_SER_BUI_ACC = 'serBUi_Acc'
-COL_SER_EN_KWH_BUI = 'SEn_kWh_bui'
-# COL_SER_EN_KWH_GDP = 'SEn_kWh_GDP' # If GDP method is used
+COL_SER_ELEC_KWH_BUI = 'Ser_elec_kWh_bui'
+# COL_SER_ELEC_KWH_GDP = 'Ser_elec_kWh_GDP' # If GDP method is used
 COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
-COL_SER_EN_KWH_EMP = 'SEn_kWh_Emp'
-COL_SER_EN_KWH_FINAL = 'SEn_kWh_final' # Final services result
+COL_SER_ELEC_KWH_EMP = 'Ser_elec_kWh_Emp'
+COL_SER_ELEC_KWH_FINAL = 'Ser_elec_kWh_final' # Final services result
 
 # Ensure all folders for output files exist
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(RESIDENTIAL_OUTPUT_DIR, exist_ok=True)
-os.makedirs(FIGURES_DHS_FOLDER, exist_ok=True)
+RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
+FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
 
 # -----------------------------------------------------------------------------
 # ANALYSIS PARAMETERS
 # -----------------------------------------------------------------------------
-
-# Admin boundaries
-ADMIN_LAYER_REGION = "ADM_ADM_1"
-ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
-ADMIN_REGION_COLUMN_NAME = "NAME_1"
-
-# UN Energy Balance codes and year
-UN_ELEC_CODE = "B07_EL"
-UN_HH_TRANSACTION_CODE = "B50_1231"
-UN_SERVICES_TRANSACTION_CODE = "B49_1235"
-UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specified
-UN_ENERGY_YEAR = 2019
 
 # Residential demand parameters
 
