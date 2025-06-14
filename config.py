@@ -45,6 +45,10 @@ HEX_SIZE = 5 ## resolution info here https://h3geo.org/docs/core-library/restabl
 # HEXAGON FILE NAME
 H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
 
+# BUFFER DISTANCE in meters.
+buffer_distance_meters = 1000 # This should be larger than half the diagonal of a hexagon
+
+
 # -----------------------------------------------------------------------------
 # RESIDENTIAL PARAMETERS
 # -----------------------------------------------------------------------------

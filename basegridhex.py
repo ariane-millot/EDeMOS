@@ -1,4 +1,5 @@
-"""BaseGridHex
+"""BaseGridHex.ipynb
+
 
 # Part 1. Create base grid with H3
 
@@ -18,7 +19,6 @@ import config
 """### Define area of interest"""
 
 area = config.AREA_OF_INTEREST
-
 print(area)
 
 """### Functions for creating heaxgons"""
@@ -33,30 +33,44 @@ if area == "COUNTRY":
     region_gdf = gpd.read_file(config.ADMIN_PATH / config.ADMIN_GPKG, layer=config.ADMIN_LAYER_REGION)
 else:
     region_gdf = gpd.read_file(config.ADMIN_PATH / config.ADMIN_GPKG, layer=config.ADMIN_LAYER_REGION)
-    region_gdf = region_gdf[region_gdf[region_col_name]==area]
+    region_gdf = region_gdf[region_gdf[config.ADMIN_REGION_COLUMN_NAME]==area]
     admin_gdf = region_gdf
 
 print(admin_gdf.crs)
 
 """### H3 - Hexagon - grid"""
 
+print("Creating a buffer to ensure full hexagon coverage...")
+# Define buffer distance in meters.
+buffer_distance_meters = config.buffer_distance_meters
+
+# Store original CRS
+original_crs = admin_gdf.crs
+# Reproject to a projected CRS (e.g., a UTM zone) for accurate buffering in meters.
+admin_gdf_proj = admin_gdf.to_crs(config.CRS_PROJ)
+
+# Create a single unified geometry for buffering.
+unified_geometry = admin_gdf_proj.union_all()
+# Apply the buffer
+buffered_geometry_proj = unified_geometry.buffer(buffer_distance_meters)
+
+# Create a new GeoDataFrame for the buffered area
+admin_gdf_buffered_proj = gpd.GeoDataFrame(geometry=[buffered_geometry_proj], crs=config.CRS_PROJ)
+# Reproject the buffered GeoDataFrame back to the original CRS (WGS84)
+admin_gdf_buffered = admin_gdf_buffered_proj.to_crs(original_crs)
+
+print("Buffer created successfully.")
+
 size = config.HEX_SIZE ## resolution info here https://h3geo.org/docs/core-library/restable
-hexagons = feat(admin_gdf, size)
-hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
-
-# # Plot basemap
-# fig, ax = plt.subplots(figsize=(25, 15))
-# hexagons.plot(ax=ax, edgecolor='brown', alpha=0.2)
-# admin_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
-# ax.set_aspect('equal', 'box')
-
-# # Save plot as figure
-# #plt.savefig('admin level basemap.png', bbox_inches='tight')
-
-# Clipping to the borders of the admin area
-join_left_df = gpd.sjoin(hexagons, region_gdf[[config.ADMIN_REGION_COLUMN_NAME, "geometry"]], how="left")
-hexagons = join_left_df[join_left_df[config.ADMIN_REGION_COLUMN_NAME].notnull()]
+# hexagons = feat(admin_gdf, size)
+hexagons_unclipped = feat(admin_gdf_buffered, size)
+print("Clipping hexagons and attaching region attributes...")
+hexagons = gpd.sjoin(hexagons_unclipped,  region_gdf[[config.ADMIN_REGION_COLUMN_NAME, "geometry"]], how="inner", predicate="intersects")
+# The sjoin adds an 'index_right' column
 hexagons = hexagons.drop(columns=['index_right'])
+hexagons = hexagons.drop_duplicates(subset='h3_index').reset_index(drop=True)
+
+"""#### Select base map grid"""
 
 # Plot basemap
 plt.rcParams.update({'font.size': 22})
@@ -100,18 +114,12 @@ plt.show()
 # Save plot as figure
 plt.savefig(config.OUTPUT_DIR / 'admin_level_basemap.png', bbox_inches='tight')
 
-"""#### Select base map grid"""
-
 hexagons['id'] = range(1, len(hexagons)+1)
-
-hexagons.head(3)
-
-hexagons.columns
 
 # Export dataframe to csv or gpkg
 #hexagons.to_csv(out_path + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
 hexagons.to_file(config.OUTPUT_DIR / f'h3_grid_at_hex_{size}.shp', index=False)
 hexagons.to_file(config.OUTPUT_DIR / config.H3_GRID_HEX_SHP, index=False) # file used in the other scripts
+hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
 admin_gdf.to_file(config.OUTPUT_DIR / f'area_gdf.gpkg', index=False)
 admin_gdf.to_file(config.OUTPUT_DIR  / f'area_gdf.geojson', driver='GeoJSON', index=False)
-
