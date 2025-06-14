@@ -37,3 +37,4 @@ def feat(aoi: gpd.GeoDataFrame, hex_res: int) -> gpd.GeoDataFrame:
     geom["index"] = geom.index
     geom = cast(gpd.GeoDataFrame, geom.dropna(axis=0, subset=["geometry"]))
     return geom
+
