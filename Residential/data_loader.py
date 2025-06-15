@@ -252,7 +252,7 @@ def load_census_data(app_config):
         national_census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_ZAMBIA_NATIONAL_CSV)
         df_censusdata = pd.read_csv(national_census_path)
         data_HH = df_censusdata[['Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
-        print(f"National census data loaded: {df_nationaldata.shape}")
+        print(f"National census data loaded: {df_censusdata.shape}")
     df_censusdata.rename(columns={'Region': 'region'}, inplace=True)
     df_censusdata.set_index('region', inplace=True)
     # return df_censusdata, data_HH
