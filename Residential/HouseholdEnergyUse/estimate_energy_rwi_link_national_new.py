@@ -263,7 +263,7 @@ def estimate_energy_rwi_link_national(grid, data_folder, figures_folder, make_fi
             pathlib.Path(figures_folder).mkdir(exist_ok=True)
             fig.suptitle(f'{letters[i]} {region_type[i].capitalize()}')
             plt.tight_layout()
-            plt.savefig(figures_folder + outfile, dpi=300)
+            plt.savefig(figures_folder / outfile, dpi=300)
             print('Created ' + outfile)
             plt.show()
             plt.close()
