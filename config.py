@@ -40,7 +40,7 @@ ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
 ADMIN_REGION_COLUMN_NAME = "NAME_1"
 
 # hexagon size
-HEX_SIZE = 5 ## resolution info here https://h3geo.org/docs/core-library/restable
+HEX_SIZE = 6 ## resolution info here https://h3geo.org/docs/core-library/restable
 
 # HEXAGON FILE NAME
 H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
@@ -160,7 +160,7 @@ COL_RES_BUI = 'res_Bui'
 COL_HH_URBAN = 'HH_urban'
 COL_HH_RURAL = 'HH_rural'
 COL_HH_TOTAL = 'HH_total'
-COL_POPULATION = 'population'
+COL_POPULATION = 'pop_total'
 COL_POP_URBAN = 'pop_urban'
 COL_POP_RURAL = 'pop_rural'
 
@@ -212,12 +212,14 @@ LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest t
 # For now, will keep E_threshold and how alpha is derived from it.
 LOGISTIC_K_INITIAL_GUESS = 5.0
 
-# Residential energy per HH - Method 2 (DHS based)
-# Parameters for estimate_energy_rwi_link_national_new.py itself
+# DHS Data parameters
 DHS_MAKE_FIGURE = True
 DHS_RECALCULATE_ENERGIES = True
 DHS_SIMULATE_CELL_GROUPS = True
-DHS_RECALCULATE_ENERGY_PERHH = False # This likely triggers a sub-script
+DHS_RECALCULATE_ENERGY_PERHH = False
+DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
+DHS_WORKING_AGE_GROUP_KEY = '15-49'
+
 
 # Tiers for comparison
 BINS_TIERS_ENERGY = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, float('inf')]
