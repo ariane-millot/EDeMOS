@@ -183,6 +183,20 @@ def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
         df_buildings.set_index('region', inplace=True)
         df_HH_buildings = data_HH.merge(df_buildings, left_on='region', right_on='region', how='left')
 
+        #Reallocate HH if no buildings linked to the location
+        # Create masks for the conditions
+        cond_no_urban_buildings = (df_HH_buildings['urbanBuildings'] == 0) & (df_HH_buildings['HH_urban'] > 0)
+        cond_no_rural_buildings = (df_HH_buildings['ruralBuildings'] == 0) & (df_HH_buildings['HH_rural'] > 0)
+        # Reallocate HH_urban to HH_rural if urbanBuildings is 0
+        df_HH_buildings.loc[cond_no_urban_buildings, 'HH_rural'] = df_HH_buildings.loc[cond_no_urban_buildings, 'HH_rural'] + df_HH_buildings.loc[cond_no_urban_buildings, 'HH_urban']
+        df_HH_buildings.loc[cond_no_urban_buildings, 'HH_urban'] = 0
+        # Reallocate HH_rural to HH_urban if ruralBuildings is 0
+        df_HH_buildings.loc[cond_no_rural_buildings, 'HH_urban'] = \
+            df_HH_buildings.loc[cond_no_rural_buildings, 'HH_urban'] + \
+            df_HH_buildings.loc[cond_no_rural_buildings, 'HH_rural']
+        df_HH_buildings.loc[cond_no_rural_buildings, 'HH_rural'] = 0
+
+
         # Warning if mismatch happen
         # To avoid division by zero, we calculate the denominator first
         denominator_rural = app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * df_HH_buildings['urbanBuildings']
@@ -260,4 +274,102 @@ def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
         print(f"Total population calculated: {total_population:,.0f}")
 
     print("Finished calculating household numbers.")
+    return grid_gdf, df_HH_buildings
+
+def estimate_hh_with_access(grid_gdf, app_config, df_HH_buildings, data_HH):
+    """
+    Estimates the number of households with electricity access and calculates access rates.
+
+    Updates grid_gdf with columns for households with and without access.
+    If provincial data is available,
+    this DataFrame is updated with regional access summaries and saved to a CSV.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        df_HH_buildings: DataFrame for regional household summaries.
+
+    Returns:
+        tuple: (grid_gdf, df_HH_buildings)
+               - grid_gdf: Updated grid GeoDataFrame.
+               - df_HH_buildings: Updated regional summary DataFrame (or None).
+    """
+    print("Estimating households with access...")
+
+    # Ensure required columns exist
+    required_cols = [app_config.COL_HH_URBAN, app_config.COL_HH_RURAL,
+                     app_config.PROB_ELEC_COL, app_config.COL_STATUS_ELECTRIFIED]
+    for col in required_cols:
+        if col not in grid_gdf.columns:
+            raise KeyError(f"Required column '{col}' not found in grid_gdf for HH access calculation.")
+
+    grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] = (
+        grid_gdf[app_config.COL_HH_URBAN] *
+        grid_gdf[app_config.PROB_ELEC_COL] *
+        (grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec') *
+        app_config.CORRECTION_FACTOR_URBAN_HH_ACCESS
+    )
+    grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] = (
+        grid_gdf[app_config.COL_HH_RURAL] *
+        grid_gdf[app_config.PROB_ELEC_COL] *
+        (grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec')
+    )
+    grid_gdf[app_config.COL_HH_WITH_ACCESS] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] + grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR]
+
+    # HH without access
+    grid_gdf[app_config.COL_HH_WO_ACCESS_URB] = grid_gdf[app_config.COL_HH_URBAN] - grid_gdf[app_config.COL_HH_WITH_ACCESS_URB]
+    grid_gdf[app_config.COL_HH_WO_ACCESS_RUR] = grid_gdf[app_config.COL_HH_RURAL] - grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR]
+    grid_gdf[app_config.COL_HH_WO_ACCESS] = grid_gdf[app_config.COL_HH_WO_ACCESS_URB] + grid_gdf[app_config.COL_HH_WO_ACCESS_RUR]
+
+    if app_config.PROVINCE_DATA_AVAILABLE and df_HH_buildings is not None:
+        print("Aggregating HH access data by region...")
+        # Aggregate HH with access by region
+        totalHHWithAccessUrb = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS_URB].sum()
+        totalHHWithAccessRur = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS_RUR].sum()
+        totalHHWithAccess = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[app_config.COL_HH_WITH_ACCESS].sum()
+
+        df_HH_access_summary = pd.DataFrame({
+            app_config.COL_HH_WITH_ACCESS_URB: totalHHWithAccessUrb,
+            app_config.COL_HH_WITH_ACCESS_RUR: totalHHWithAccessRur,
+            app_config.COL_HH_WITH_ACCESS: totalHHWithAccess,
+        })
+        df_HH_access_summary.rename_axis('region', inplace=True)
+        # print(df_HH_access_summary)
+        # Merge with df_HH_buildings
+        df_HH_buildings = df_HH_buildings.merge(df_HH_access_summary, left_index=True, right_index=True)
+        # print(df_HH_buildings)
+        # Calculate population with access (requires df_censusdata for HH size)
+        # This part might be better placed if df_censusdata is passed directly, or HH size is already in df_HH_buildings_optional
+        if app_config.COL_POPULATION in grid_gdf.columns: # Check if population was calculated
+            get_size_HH = lambda row: data_HH.loc[row[app_config.COL_ADMIN_NAME], f"size_HH_{row[app_config.COL_LOC_ASSESSED]}"] \
+                                  if row[app_config.COL_ADMIN_NAME] in data_HH.index else np.nan
+            grid_gdf['population_urban_withAccess'] = grid_gdf[app_config.COL_POPULATION] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_rural_withAccess'] = grid_gdf[app_config.COL_POPULATION] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_withAccess'] = grid_gdf['population_urban_withAccess'] + grid_gdf['population_rural_withAccess']
+            total_population_withAccess = grid_gdf['population_withAccess'].sum()
+            print(f"Total population with access (estimated): {total_population_withAccess:,.0f}")
+
+        # Calculate access rates in df_HH_buildings
+        df_HH_buildings['accessRateHH'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS] / df_HH_buildings['HH_total']).replace([np.inf, -np.inf, np.nan], 0)
+        df_HH_buildings['accessRateHH_urban'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS_URB] / df_HH_buildings['HH_urban']).replace([np.inf, -np.inf, np.nan], 0)
+        df_HH_buildings['accessRateHH_rural'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS] / df_HH_buildings['HH_rural']).replace([np.inf, -np.inf, np.nan], 0)
+
+        # Add national summary to df_HH_buildings
+        if not df_HH_buildings.empty:
+            df_sum = df_HH_buildings[[col for col in df_HH_buildings.columns if col != app_config.COL_ADMIN_NAME]].sum(axis=0, numeric_only=True)
+            df_sum[app_config.COL_ADMIN_NAME] = 'National'
+            # Recalculate rates for National summary
+            df_sum['accessRateHH'] = df_sum[app_config.COL_HH_WITH_ACCESS] / df_sum['HH_total']
+            df_sum['accessRateHH_urban'] = df_sum[app_config.COL_HH_WITH_ACCESS_URB] / df_sum['HH_urban']
+            df_sum['accessRateHH_rural'] = df_sum[app_config.COL_HH_WITH_ACCESS_RUR] / df_sum['HH_rural']
+            df_sum = pd.DataFrame(df_sum).T.set_index(app_config.COL_ADMIN_NAME)
+            df_HH_buildings = pd.concat([df_HH_buildings, df_sum])
+
+        output_csv_path = app_config.RESIDENTIAL_OUTPUT_DIR / "dataHH_region.csv"
+        df_HH_buildings.to_csv(output_csv_path, index=True)
+        print(f"Regional HH summary saved to {output_csv_path}")
+        print(df_HH_buildings[['accessRateHH','accessRateHH_urban','accessRateHH_rural']].tail())
+
+
+    print("Finished estimating households with access.")
     return grid_gdf, df_HH_buildings
