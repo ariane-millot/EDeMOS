@@ -1,19 +1,15 @@
 Outputs
-PlanetData
 .idea
 **/.ipynb_checkpoint**
 *.pyc
-Residential/cache
-Residential/__pycache__
-Residential/Code/cache
-Residential/Data
-Residential/Figures
+Buildings/cache
+Buildings/__pycache__
+Buildings/Data
+Buildings/Figures
 Industry/Data/UN stats
 Industry/Data/mines
 Industry/Data/USGS survey
 Industry/Data/Archives
 Industry/Archives
-admin/gadm41_ZMB_1.shp
-admin/gadm41_ZMB_shp
-Grid
+Data
 convert_crs.py
