@@ -85,6 +85,7 @@ HREA_LIGHTING_TIF = "Zambia_set_lightscore_sy_2019.tif"
 # Link: https://gee-community-catalog.org/projects/rwi/
 # run the notebook Rasterize RWI.ipynb to generate rwi_map.tif
 RWI_MAP_TIF = "rwi_map.tif"
+RWI_FILE_CSV = "zmb_relative_wealth_index.csv"
 
 # Falchetta Tiers file
 # - Use QGIS to generate the raster file (*.tif)
