@@ -10,14 +10,15 @@ ROOT_DIR = Path( __file__ ).parent.absolute()
 # Define area of interest
 AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
 ADMIN_GPKG = "gadm41_ZMB.gpkg"
-
+YEAR = 2019 # year of analysis
 
 # -----------------------------------------------------------------------------
 # PATHS
 # -----------------------------------------------------------------------------
 
+DATA_FOLDER = ROOT_DIR / "Data"
 # Input paths
-ADMIN_PATH = ROOT_DIR / "admin"
+ADMIN_PATH = DATA_FOLDER / "admin"
 
 # Output paths
 OUTPUT_DIR = ROOT_DIR / "Outputs"
@@ -29,9 +30,10 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # -----------------------------------------------------------------------------
 CRS_WGS84 = CRS("EPSG:4326") # Original WGS84 coordinate system
 CRS_PROJ = CRS("EPSG:32736") # Projection system for the selected country - see http://epsg.io/ for more info
+TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S)
 
 # -----------------------------------------------------------------------------
-# GENERAL PARAMETERS - HEXAGONS
+# PARAMETERS - HEXAGONS
 # -----------------------------------------------------------------------------
 
 # Admin boundaries
@@ -56,18 +58,18 @@ buffer_distance_meters = 1000 # This should be larger than half the diagonal of 
 # File paths
 
 # Input paths
-GRID_PATH = ROOT_DIR / "Grid" # For MV/HV lines
-ENERGY_BALANCE_PATH = ROOT_DIR / "EnergyBalance"
-RESIDENTIAL_DATA_PATH = ROOT_DIR / "Residential" / "Data"
+GRID_PATH = DATA_FOLDER / "Grid" # For MV/HV lines
+ENERGY_BALANCE_PATH = DATA_FOLDER / "EnergyBalance"
+RESIDENTIAL_DATA_PATH = ROOT_DIR / "Buildings" / "Data"
 WORLDPOP_PATH = RESIDENTIAL_DATA_PATH / "WorldPop"
 LIGHTING_PATH = RESIDENTIAL_DATA_PATH / "Lighting"
 RWI_PATH = RESIDENTIAL_DATA_PATH / "WealthIndex"
 FALCHETTA_PATH = RESIDENTIAL_DATA_PATH / "Falchetta_ElecAccess"
-# GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP") # Example if it was used
+# GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP")
 
 # Output paths
-RESIDENTIAL_OUTPUT_DIR = ROOT_DIR / "Residential" / "Outputs" # As used in building_demand.py for dataHH_region.csv
-FIGURES_DHS_FOLDER = ROOT_DIR / "Residential" / "Figures" # As used in estimate_energy_rwi_link_national_new.py
+RESIDENTIAL_OUTPUT_DIR = ROOT_DIR / "Buildings" / "Outputs" # As used in building_demand.py for dataHH_region.csv
+FIGURES_DHS_FOLDER = ROOT_DIR / "Buildings" / "Figures" # As used in estimate_energy_rwi_link_national_new.py
 
 # WorldPop files
 # Link: https://apps.worldpop.org/peanutButter/
@@ -81,9 +83,12 @@ HREA_LIGHTING_TIF = "Zambia_set_lightscore_sy_2019.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
+# run the notebook Rasterize RWI.ipynb to generate rwi_map.tif
 RWI_MAP_TIF = "rwi_map.tif"
 
 # Falchetta Tiers file
+# - Use QGIS to generate the raster file (*.tif)
+# - EPSG:4326
 FALCHETTA_TIERS_TIF = "Zambia_tiersofaccess_2018.tif"
 
 # GDP file Kummu dataset
@@ -91,6 +96,7 @@ FALCHETTA_TIERS_TIF = "Zambia_tiersofaccess_2018.tif"
 # GDP_PPP_TIF = "GDP_PPP_30arcsec_v3_band3_Zambia.tif"
 
 # UN Energy Balance file
+# https://data.un.org/SdmxBrowser/start
 UN_ENERGY_BALANCE_CSV = "UNSD+DF_UNData_EnergyBalance+1.0_Zambia.csv"
 
 # Grid line files
@@ -100,46 +106,45 @@ MV_LINES_SHP = GRID_PATH / "Zambia - MVLines" / "Zambia - MVLines.shp"
 HV_LINES_SHP = GRID_PATH / "Zambia - HVLines" / "HVLines.shp"
 
 # Census data files
+# The file should contain the following data, region, HH urban, rural, total, size of HH urban/rural
 PROVINCE_DATA_AVAILABLE = True
 CENSUS_ZAMBIA_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / "Census_Zambia.csv"
 CENSUS_ZAMBIA_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" /  "Census_Zambia_National.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
-DHS_HOUSEHOLD_DATA_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "household_data.csv"
-DHS_EMPLOYEE_WOMEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_women.csv"
-DHS_EMPLOYEE_MEN_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "employee_survey_men.csv"
-DHS_WORKING_POP_SHARE_CSV = RESIDENTIAL_DATA_PATH / "DHSSurvey" / "pop15-49_share.csv"
+# 1. Run read_DHShousehold_to_df.ipynb to generate the household_data.csv
+# 2. Run estimate_energy_per_household_DHS.ipynb
+# For services:
+# 1 Run: read_DHSservices_to_df.ipynb
+# 2 Download the Individual Recode  KEIR8CDT.ZIP to generate employee_survery_(men/women).csv
+DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHSSurvey"
+DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / "household_data.csv"
+DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / "employee_survey_women.csv"
+DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / "employee_survey_men.csv"
+DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / "pop15-49_share.csv"
 
 # Ensure all folders for output files exist
 RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
 FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
-# COORDINATE REFERENCE SYSTEMS
-# -----------------------------------------------------------------------------
-# CRS_WGS84 = CRS("EPSG:4326")
-# CRS_PROJ = CRS("EPSG:32736") # Zambia UTM Zone 36S
-TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S) - check if this is consistent or should be same as CRS_PROJ
-
-# -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
 # -----------------------------------------------------------------------------
-
 
 # UN Energy Balance codes and year
 UN_ELEC_CODE = "B07_EL"
 UN_HH_TRANSACTION_CODE = "B50_1231"
 UN_SERVICES_TRANSACTION_CODE = "B49_1235"
 UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specified
-UN_ENERGY_YEAR = 2019
+UN_ENERGY_YEAR = YEAR
 
 # -----------------------------------------------------------------------------
 # COLUMN NAMES FOR GRID
 # -----------------------------------------------------------------------------
 # Input columns from H3 grid
-COL_H3_ID = 'h3_index' # Or whatever the ID column in h3_grid_at_hex.shp is, e.g. 'id'
+COL_H3_ID = 'h3_index' # the ID column in h3_grid_at_hex.shp
 
-# Processed column names (examples, expand as needed)
+# Processed column names
 COL_BUILDINGS_SUM = 'buildingssum'
 COL_LOCATION_WP = 'locationWP' # after processing_raster
 COL_HREA_MEAN = 'HREA' # after processing_raster and rename
@@ -151,12 +156,12 @@ COL_TIERS_FALCHETTA_MEAN = 'tiers_falchetta_mean'
 COL_ADMIN_NAME = ADMIN_REGION_COLUMN_NAME
 
 COL_LOC_ASSESSED = 'location' # Final urban/rural column
-COL_STATUS_ELECTRIFIED = 'Status_electrified'
+COL_STATUS_ELECTRIFIED = 'status_electrified'
 COL_IS_NEAR_ANY_LINE = 'is_near_any_line'
 
 COL_RES_URBAN_BUI = 'res_urbanBui'
 COL_RES_RURAL_BUI = 'res_ruralBui'
-COL_RES_BUI = 'res_Bui'
+COL_RES_BUI = 'resBui'
 COL_HH_URBAN = 'HH_urban'
 COL_HH_RURAL = 'HH_rural'
 COL_HH_TOTAL = 'HH_total'
@@ -172,21 +177,21 @@ COL_HH_WO_ACCESS_RUR = 'HHwoAccess_rur'
 COL_HH_WO_ACCESS = 'HHwoAccess'
 
 COL_RWI_NORM = 'rwi_norm'
-COL_RES_ELEC_PER_HH_LOG = 'Elec_PerHH_kWh_log'
-COL_RES_ELEC_PER_HH_DHS = 'Elec_PerHH_kWh_DHS' # from estimate_energy script
-COL_RES_ELEC_KWH_METH1 = 'Elec_kWh_meth1'
-COL_RES_ELEC_KWH_METH2 = 'Elec_kWh_meth2'
-COL_RES_ELEC_KWH_METH1_SCALED = 'ResElec_kWh_meth1_scaled'
-COL_RES_ELEC_KWH_METH2_SCALED = 'ResElec_kWh_meth2_scaled' # Final residential result often used for map
+COL_RES_ELEC_PER_HH_LOG = 'elec_PerHH_kWh_log'
+COL_RES_ELEC_PER_HH_DHS = 'elec_PerHH_kWh_DHS' # from estimate_energy script
+COL_RES_ELEC_KWH_METH1 = 'elec_kWh_meth1'
+COL_RES_ELEC_KWH_METH2 = 'elec_kWh_meth2'
+COL_RES_ELEC_KWH_METH1_SCALED = 'resElec_kWh_meth1_scaled'
+COL_RES_ELEC_KWH_METH2_SCALED = 'resElec_kWh_meth2_scaled'
 
 COL_SER_BUI = 'serBui'
-COL_SER_BUI_ACC = 'serBUi_Acc'
+COL_SER_BUI_ACC = 'serBUi_access'
 COL_SER_ELEC_KWH_BUI = 'Ser_elec_kWh_bui'
 # COL_SER_ELEC_KWH_GDP = 'Ser_elec_kWh_GDP' # If GDP method is used
 COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
-COL_SER_ELEC_KWH_EMP = 'Ser_elec_kWh_Emp'
-COL_SER_ELEC_KWH_FINAL = 'Ser_elec_kWh_final' # Final services result
+COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_Emp'
+COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
 
 
 # -----------------------------------------------------------------------------
