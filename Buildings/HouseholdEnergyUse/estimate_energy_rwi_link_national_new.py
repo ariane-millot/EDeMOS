@@ -26,22 +26,27 @@ def logistic(x, a, b, x0):
 np.random.seed(42)
 
 
-def estimate_energy_rwi_link_national(grid, data_folder, figures_folder, make_figure = True, recalculate_energies = True,
-                                      simulate_cell_groups = True, recalculate_energy_perhh = False):
+def estimate_energy_rwi_link_national(grid, app_config):
     np.random.seed(42)
 
     # To produce graphs of the simulated cell groups, set simulate_cell_groups = True
     # To produce graphs showing the fitting function, set simulate_cell_groups = False and recalculate_energies = True
 
-    # recalculate_energies = True # If false will just use any existing value in grid data
-    # simulate_cell_groups = True  # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
+    data_folder = app_config.DHS_FOLDER
+    figures_folder = app_config.FIGURES_DHS_FOLDER
+    make_figure = app_config.DHS_MAKE_FIGURE
+    recalculate_energies = app_config.DHS_RECALCULATE_ENERGIES # If false will just use any existing value in grid data
+    # recalculate_energies = True
+    simulate_cell_groups = app_config.DHS_SIMULATE_CELL_GROUPS # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
+    # simulate_cell_groups = True
+    recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
 
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
         compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
-    infile_DHS = data_folder + 'household_data.csv'  
+    infile_DHS = data_folder / 'household_data.csv'
     dataDHS_all = read_csv(infile_DHS)
     wealth_index = 1e-5 * dataDHS_all["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
     if make_figure:
