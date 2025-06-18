@@ -6,7 +6,7 @@ ROOT_DIR = Path( __file__ ).parent.absolute()
 # -----------------------------------------------------------------------------
 # AREA OF INTEREST CHOICE -- to update with the country
 # -----------------------------------------------------------------------------
-
+COUNTRY = "Zambia"
 # Define area of interest
 AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
 ADMIN_GPKG = "gadm41_ZMB.gpkg"
@@ -118,7 +118,7 @@ CENSUS_ZAMBIA_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" /  "Census_Zambia_
 # For services:
 # 1 Run: read_DHSservices_to_df.ipynb
 # 2 Download the Individual Recode  KEIR8CDT.ZIP to generate employee_survery_(men/women).csv
-DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHSSurvey"
+DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS"
 DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / "household_data.csv"
 DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / "employee_survey_women.csv"
 DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / "employee_survey_men.csv"
@@ -127,6 +127,12 @@ DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / "pop15-49_share.csv"
 # Ensure all folders for output files exist
 RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
 FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
+
+# -----------------------------------------------------------------------------
+# DHS FILES PARAMETERS
+# -----------------------------------------------------------------------------
+DHS_HH_SURVEY_FILE = ''
+DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -139,6 +145,51 @@ UN_SERVICES_TRANSACTION_CODE = "B49_1235"
 UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specified
 UN_ENERGY_YEAR = YEAR
 
+
+# -----------------------------------------------------------------------------
+# ANALYSIS PARAMETERS
+# -----------------------------------------------------------------------------
+
+# Residential demand parameters
+THRESHOLD_ELEC_ACCESS_URBAN = 0.9
+THRESHOLD_ELEC_ACCESS_RURAL = 0.1
+MV_LINES_BUFFER_DIST = 500 # meters
+HV_LINES_BUFFER_DIST = 500 # meters
+NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
+NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 1.0 # For HHwithAccess_urb calculation
+
+# Residential energy per HH - Method 1 (Logistic RWI)
+LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
+LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest tier
+# alpha = E_threshold / 0.1 - 1. This implies a specific low energy value.
+# To get E_HH = 7kWh when rwi_norm is low (exp term ~1), E_threshold / (1+alpha) = 7.
+# For now, will keep E_threshold and how alpha is derived from it.
+LOGISTIC_K_INITIAL_GUESS = 5.0
+
+# DHS Data parameters
+DHS_MAKE_FIGURE = True
+DHS_RECALCULATE_ENERGIES = True
+DHS_SIMULATE_CELL_GROUPS = True
+DHS_RECALCULATE_ENERGY_PERHH = False
+DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
+DHS_WORKING_AGE_GROUP_KEY = '15-49'
+
+
+# Tiers for comparison
+BINS_TIERS_ENERGY = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, float('inf')]
+
+# Services demand parameters
+# Weights for weighted average of services energy (alpha: GDP, beta: buildings, gamma: employees)
+SERVICES_WEIGHT_GDP = 0.0 # alpha
+SERVICES_WEIGHT_BUILDINGS = 0.0 # beta
+SERVICES_WEIGHT_EMPLOYEES = 1.0 # gamma
+# THRESHOLD_ACCESS_SERVICES = 0.1 # from original script, check if used with new structure
+
+# Plotting parameters
+MAP_DEFAULT_CMAP = "Reds"
+MAP_LOG_NORM_VMIN = 1e-6
+
 # -----------------------------------------------------------------------------
 # COLUMN NAMES FOR GRID
 # -----------------------------------------------------------------------------
@@ -149,6 +200,7 @@ COL_H3_ID = 'h3_index' # the ID column in h3_grid_at_hex.shp
 COL_BUILDINGS_SUM = 'buildingssum'
 COL_LOCATION_WP = 'locationWP' # after processing_raster
 COL_HREA_MEAN = 'HREA' # after processing_raster and rename
+PROB_ELEC_COL = COL_HREA_MEAN # residential analysis parameters
 COL_RWI_MEAN = 'rwi' # after processing_raster and rename
 COL_TIERS_FALCHETTA_MAJ = 'tiers_falchetta_maj'
 COL_TIERS_FALCHETTA_MEAN = 'tiers_falchetta_mean'
@@ -193,50 +245,3 @@ COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
 COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_Emp'
 COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
-
-
-# -----------------------------------------------------------------------------
-# ANALYSIS PARAMETERS
-# -----------------------------------------------------------------------------
-
-# Residential demand parameters
-
-PROB_ELEC_COL = COL_HREA_MEAN
-THRESHOLD_ELEC_ACCESS_URBAN = 0.9
-THRESHOLD_ELEC_ACCESS_RURAL = 0.1
-MV_LINES_BUFFER_DIST = 500 # meters
-HV_LINES_BUFFER_DIST = 500 # meters
-NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
-NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 1.0 # For HHwithAccess_urb calculation
-
-# Residential energy per HH - Method 1 (Logistic RWI)
-LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
-LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest tier
-# alpha = E_threshold / 0.1 - 1. This implies a specific low energy value.
-# To get E_HH = 7kWh when rwi_norm is low (exp term ~1), E_threshold / (1+alpha) = 7.
-# For now, will keep E_threshold and how alpha is derived from it.
-LOGISTIC_K_INITIAL_GUESS = 5.0
-
-# DHS Data parameters
-DHS_MAKE_FIGURE = True
-DHS_RECALCULATE_ENERGIES = True
-DHS_SIMULATE_CELL_GROUPS = True
-DHS_RECALCULATE_ENERGY_PERHH = False
-DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
-DHS_WORKING_AGE_GROUP_KEY = '15-49'
-
-
-# Tiers for comparison
-BINS_TIERS_ENERGY = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, float('inf')]
-
-# Services demand parameters
-# Weights for weighted average of services energy (alpha: GDP, beta: buildings, gamma: employees)
-SERVICES_WEIGHT_GDP = 0.0 # alpha
-SERVICES_WEIGHT_BUILDINGS = 0.0 # beta
-SERVICES_WEIGHT_EMPLOYEES = 1.0 # gamma
-# THRESHOLD_ACCESS_SERVICES = 0.1 # from original script, check if used with new structure
-
-# Plotting parameters
-MAP_DEFAULT_CMAP = "Reds"
-MAP_LOG_NORM_VMIN = 1e-6
