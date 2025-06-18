@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'DemandMappingZambia':
+if os.path.basename(currentdir) != 'EDeMOS':
   sys.path.insert(0, os.path.dirname(currentdir))
   os.chdir('..')
   print(f'Move to {os.getcwd()}')
