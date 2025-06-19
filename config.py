@@ -248,7 +248,7 @@ PROB_ELEC_COL = COL_HREA_MEAN # residential analysis parameters
 COL_RWI_MEAN = 'rwi' # after processing_raster and rename
 COL_TIERS_FALCHETTA_MAJ = 'tiers_falchetta_maj'
 COL_TIERS_FALCHETTA_MEAN = 'tiers_falchetta_mean'
-# COL_GDP_PPP_MEAN = 'GDP_PPP'
+COL_GDP_PPP_MEAN = 'GDP_PPP'
 
 COL_ADMIN_NAME = ADMIN_REGION_COLUMN_NAME
 
@@ -258,13 +258,13 @@ COL_IS_NEAR_ANY_LINE = 'is_near_any_line'
 
 COL_RES_URBAN_BUI = 'res_urbanBui'
 COL_RES_RURAL_BUI = 'res_ruralBui'
-COL_RES_BUI = 'resBui'
+COL_RES_BUI = 'res_totalBui'
 COL_HH_URBAN = 'HH_urban'
 COL_HH_RURAL = 'HH_rural'
 COL_HH_TOTAL = 'HH_total'
-COL_POPULATION = 'pop_total'
 COL_POP_URBAN = 'pop_urban'
 COL_POP_RURAL = 'pop_rural'
+COL_POPULATION = 'pop_total'
 
 COL_HH_WITH_ACCESS_URB = 'HHwithAccess_urb'
 COL_HH_WITH_ACCESS_RUR = 'HHwithAccess_rur'
@@ -275,7 +275,7 @@ COL_HH_WO_ACCESS = 'HHwoAccess'
 
 COL_RWI_NORM = 'rwi_norm'
 COL_RES_ELEC_PER_HH_LOG = 'elec_PerHH_kWh_log'
-COL_RES_ELEC_PER_HH_DHS = 'elec_PerHH_kWh_DHS' # from estimate_energy script
+COL_RES_ELEC_PER_HH_DHS = 'elec_PerHH_kWh_DHS'
 COL_RES_ELEC_KWH_METH1 = 'elec_kWh_meth1'
 COL_RES_ELEC_KWH_METH2 = 'elec_kWh_meth2'
 COL_RES_ELEC_KWH_METH1_SCALED = 'resElec_kWh_meth1_scaled'
