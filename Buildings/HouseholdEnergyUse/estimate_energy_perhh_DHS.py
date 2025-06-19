@@ -72,7 +72,7 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
     energy_use = energy_use*(household_size/nominal_household_size)**elas
 
     # Write or overwrite column in data file with estimated energy use values
-    data['Electricity Use'] = energy_use
+    data[config.DHS_ELEC_KWH_ASSESSED_SURVEY] = energy_use
     data.to_csv(config.DHS_HOUSEHOLD_DATA_CSV, index=None)
     print('Written energy use estimates to', config.DHS_HOUSEHOLD_DATA_CSV)
 
