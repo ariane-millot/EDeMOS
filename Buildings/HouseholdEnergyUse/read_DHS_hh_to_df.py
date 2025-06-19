@@ -36,11 +36,11 @@ df = pd.read_stata(
     convert_categoricals=False,
 )
 
-# Use if you want to read the text version of the data
-# print(value_labels)
-for col in value_labels:
-    if col.lower() in df.columns:
-        df[col.lower()] = df[col.lower()].replace(value_labels[col])
+# # Use if you want to read the text version of the data
+# # print(value_labels)
+# for col in value_labels:
+#     if col.lower() in df.columns:
+#         df[col.lower()] = df[col.lower()].replace(value_labels[col])
 
 # select labels from the .do file (see config)
 df = df[config.labels_hh]
