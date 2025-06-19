@@ -54,20 +54,26 @@ def plot_line_proximity_map(grid_gdf, app_config, admin_gdf_param, fig_size=(15,
     fig, ax = plt.subplots(figsize=fig_size)
     if app_config.COL_IS_NEAR_ANY_LINE in grid_gdf.columns:
         grid_gdf.sort_values(app_config.COL_IS_NEAR_ANY_LINE, ascending=True).plot(
-            ax=ax, column=app_config.COL_IS_NEAR_ANY_LINE, cmap="Reds", legend=True, alpha=0.5)
+            ax=ax, column=app_config.COL_IS_NEAR_ANY_LINE, cmap="Reds", legend=True, alpha=0.5,categorical=True,
+            legend_kwds={
+                'labels': ['Not Near Line', 'Near Line'],
+                'title': 'Grid Cell Proximity',
+                'loc': 'upper left'
+            }
+        )
 
-        try:
-            if os.path.exists(app_config.MV_LINES_SHP):
-                mv_lines = gpd.read_file(app_config.MV_LINES_SHP).to_crs(grid_gdf.crs)
-                mv_lines.plot(ax=ax, edgecolor='blue', alpha=0.2, label='MV Lines')
-            if os.path.exists(app_config.HV_LINES_SHP):
-                hv_lines = gpd.read_file(app_config.HV_LINES_SHP).to_crs(grid_gdf.crs)
-                hv_lines.plot(ax=ax, edgecolor='purple', alpha=0.2, label='HV Lines')
-            if admin_gdf_param is not None:
-                 admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='black', facecolor='none', alpha=0.2)
-            plt.legend()
-        except Exception as e:
-            print(f"Could not load or plot transmission lines for context map: {e}")
+        # try:
+        #     if os.path.exists(app_config.MV_LINES_SHP):
+        #         mv_lines = gpd.read_file(app_config.MV_LINES_SHP).to_crs(grid_gdf.crs)
+        #         mv_lines.plot(ax=ax, edgecolor='blue', alpha=0.2, label='MV Lines')
+        #     if os.path.exists(app_config.HV_LINES_SHP):
+        #         hv_lines = gpd.read_file(app_config.HV_LINES_SHP).to_crs(grid_gdf.crs)
+        #         hv_lines.plot(ax=ax, edgecolor='purple', alpha=0.2, label='HV Lines')
+        #     if admin_gdf_param is not None:
+        #          admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='black', facecolor='none', alpha=0.2)
+        #     plt.legend()
+        # except Exception as e:
+        #     print(f"Could not load or plot transmission lines for context map: {e}")
 
         ax.set_aspect('equal', 'box')
         ax.set_title(f'Proximity to HV/MV Lines in {app_config.AREA_OF_INTEREST}')
