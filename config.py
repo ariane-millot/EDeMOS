@@ -119,10 +119,10 @@ CENSUS_ZAMBIA_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" /  "Census_Zambia_
 # 1 Run: read_DHSservices_to_df.ipynb
 # 2 Download the Individual Recode  KEIR8CDT.ZIP to generate employee_survery_(men/women).csv
 DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS"
-DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / "household_data.csv"
-DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / "employee_survey_women.csv"
-DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / "employee_survey_men.csv"
-DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / "pop15-49_share.csv"
+DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / f'household_data_{COUNTRY}.csv'
+DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / f'employee_survey_women_{COUNTRY}.csv'
+DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / f'employee_survey_men_{COUNTRY}.csv'
+DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / f'pop15-49_share_{COUNTRY}.csv'
 
 # Ensure all folders for output files exist
 RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
@@ -131,8 +131,50 @@ FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
 # -----------------------------------------------------------------------------
-DHS_HH_SURVEY_FILE = ''
+DHS_HH_SURVEY_FILE = 'ZMHR71DT/ZMHR71FL'
 DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
+
+# Households labels
+# Choose the labels to be selected from the .do file
+#label variable hv005       "Household sample weight (6 decimals)"
+#label variable hv009       "Number of household members",
+#label variable hv022       "Sample strata for sampling errors"
+#label variable hv023       "Stratification used in sample design"
+#label variable hv024       "Province"
+#label variable hv025       "Type of place of residence"
+#label variable hv206       "Has electricity",
+#label variable hv207       "Has radio"
+#label variable hv208       "Has television"
+#label variable hv209       "Has refrigerator"
+#label variable hv243a      "Has mobile telephone"
+#label variable hv243e      "Has a computer"
+# label variable sh121f   "Access to Internet"
+# label variable sh121j   "Washing machine"
+# label variable sh121k   "Air conditioner"
+# label variable sh121l   "Generator"
+# label variable sh121m   "Microwave"
+#label variable hv270       "Wealth index combined"
+#label variable hv270a      "Wealth index for urban/rural"
+#label variable hv271       "Wealth index factor score combined (5 decimals)"
+#label variable hv271a      "Wealth index factor score for urban/rural (5 decimals)"
+labels_hh = ['hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
+             'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m',
+             'hv270', 'hv270a', 'hv271', 'hv271a']
+
+# Define the columns we want to change in the DHS data and what their new names will be.
+DHS_SURVEY_HH_old_to_new_names = {
+    "Has electricity": "Electricity",
+    "Has radio": "Radio",
+    "Has mobile telephone": "Mobile telephone",
+    "Has television": "Television",
+    "Has refrigerator": "Refrigerator",
+    "Has a computer": "Computer",
+    "Access to Internet": "Internet",
+    "Washing machine": "Washing machine",
+    "Air conditioner": "Air conditioner",
+    "Generator": "Generator",
+    "Microwave": "Microwave",
+}
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
