@@ -113,11 +113,12 @@ CENSUS_ZAMBIA_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / "Census_Zambia.c
 CENSUS_ZAMBIA_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" /  "Census_Zambia_National.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
-# 1. Run read_DHShousehold_to_df.ipynb to generate the household_data.csv
-# 2. Run estimate_energy_per_household_DHS.ipynb
+# 1. Run read_DHS_hh_to_df.py in HouseholdEnergyUse folder to generate the household_data.csv
+# 2. Run estimate_energy_perhh_DHS.py in HouseholdEnergyUse folder
 # For services:
-# 1 Run: read_DHSservices_to_df.ipynb
-# 2 Download the Individual Recode  KEIR8CDT.ZIP to generate employee_survery_(men/women).csv
+# 1 Download the Individual Recode  XXXXDT.ZIP to generate employee_survey_(men/women).csv
+# 2 Run: read_DHS_services_to_df.py in HouseholdEnergyUse folder
+# 3 Download or add the 'pop15-49_share_{COUNTRY}.csv' file in the DHS folder
 DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS"
 DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / f'household_data_{COUNTRY}.csv'
 DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / f'employee_survey_women_{COUNTRY}.csv'
@@ -287,3 +288,9 @@ COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
 COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_Emp'
 COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
+
+# -----------------------------------------------------------------------------
+# RESULTS FILES NAME
+# -----------------------------------------------------------------------------
+RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
+SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
