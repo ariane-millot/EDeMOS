@@ -7,7 +7,7 @@ The attached _*.yml_ will allow you to create a new environment in Conda. The ne
 ```
 conda env create -f environment.yml
 ```
-
+## Workflow steps
 1. Download the different data sets for the country and put in relevant folders (see config file for location)
 2. Adjust config file
 3. Run the rwi rasterize script
