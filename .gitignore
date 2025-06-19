@@ -1,15 +1,19 @@
-Outputs
 .idea
 **/.ipynb_checkpoint**
 *.pyc
+Outputs/*
+Data/admin/*
+Data/EnergyBalance/*
+Data/Grid/*
 Buildings/cache
 Buildings/__pycache__
-Buildings/Data
-Buildings/Figures
+Buildings/Data/*
+!Buildings/Data/appliance_energy_use.csv
+Buildings/Figures/*
+Buildings/Outputs/*
 Industry/Data/UN stats
 Industry/Data/mines
 Industry/Data/USGS survey
 Industry/Data/Archives
 Industry/Archives
-Data
 convert_crs.py
