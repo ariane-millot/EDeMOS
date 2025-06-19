@@ -130,6 +130,13 @@ RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
 FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
+# INDUSTRY PARAMETERS
+# -----------------------------------------------------------------------------
+MINES_DATA_PATH = DATA_FOLDER / "Industry" / "Data" / "mines"
+MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
+MINES_OUTPUT_GPKG = "mineral_facilities_zambia.gpkg" # .gpkg extension included
+
+# -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
 # -----------------------------------------------------------------------------
 DHS_HH_SURVEY_FILE = 'ZMHR71DT/ZMHR71FL'
@@ -274,20 +281,21 @@ COL_HH_WO_ACCESS_RUR = 'HHwoAccess_rur'
 COL_HH_WO_ACCESS = 'HHwoAccess'
 
 COL_RWI_NORM = 'rwi_norm'
-COL_RES_ELEC_PER_HH_LOG = 'elec_PerHH_kWh_log'
-COL_RES_ELEC_PER_HH_DHS = 'elec_PerHH_kWh_DHS'
-COL_RES_ELEC_KWH_METH1 = 'elec_kWh_meth1'
-COL_RES_ELEC_KWH_METH2 = 'elec_kWh_meth2'
+COL_RES_ELEC_PER_HH_LOG = 'elec_perHH_kWh_log'
+COL_RES_ELEC_PER_HH_DHS = 'elec_perHH_kWh_DHS'
+COL_RES_ELEC_KWH_METH1 = 'res_elec_kWh_meth1'
+COL_RES_ELEC_KWH_METH2 = 'res_elec_kWh_meth2'
 COL_RES_ELEC_KWH_METH1_SCALED = 'resElec_kWh_meth1_scaled'
 COL_RES_ELEC_KWH_METH2_SCALED = 'resElec_kWh_meth2_scaled'
 
 COL_SER_BUI = 'serBui'
 COL_SER_BUI_ACC = 'serBUi_access'
-COL_SER_ELEC_KWH_BUI = 'Ser_elec_kWh_bui'
+COL_SER_ELEC_KWH_BUI = 'ser_elec_kWh_bui'
 # COL_SER_ELEC_KWH_GDP = 'Ser_elec_kWh_GDP' # If GDP method is used
 COL_TOTAL_EMPLOYEE = 'total_employee'
 COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
-COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_Emp'
+COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_emp'
+COL_SER_ELEC_KWH_WEIGHTED = 'ser_elec_kWh_weighted'
 COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
 
 # -----------------------------------------------------------------------------
