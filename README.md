@@ -8,15 +8,23 @@ The attached _*.yml_ will allow you to create a new environment in Conda. The ne
 conda env create -f environment.yml
 ```
 
+1. Download the different data sets for the country and put in relevant folders (see config file for location)
+2. Adjust config file
+3. Run the rwi rasterize script
+4. Run the DHS data to df script for households and services (select appropriate labels)
+5. Adjust census data to have HH urban, rural, total and size of HH
+6. Run GeoDem.py
+
 ## Useful data sets
 
-1. Kenya Population and Housing Census 2019. [KNBS, 2019](https://open.africa/dataset/2019-kenya-population-and-housing-census).
+1. Zambia Census 2022. [Zamstats, 2022](https://www.zamstats.gov.zm/census/).
 2. Demographic and Health Surveys (DHS). [DHS](https://dhsprogram.com/data/dataset/Kenya_Standard-DHS_2022.cfm)
 3. A high-resolution gridded dataset to assess electrification in sub-Saharan Africa [^1].
 4. Gridded global Gross Domestic Product and Human Development Index datasets over 1990–2015 [^2]. 
 5. High-Resolution Electricity Access. set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1) [^3].
 6. Relative Wealth Index (RWI) [^4].
-7. Gridded population estimates from building footprints [^5].
+7. Building footprints [^5].
+8. Energy balance (UN stats)
 
 ## Cite this work
 
