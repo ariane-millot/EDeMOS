@@ -1,12 +1,25 @@
 from pandas import read_csv
 import numpy as np
 
+# Check if we are running the notebook directly, if so move workspace to parent dir
+import sys
+import os
+currentdir = os.path.abspath(os.getcwd())
+if os.path.basename(currentdir) != 'EDeMOS':
+  sys.path.insert(0, os.path.dirname(currentdir))
+  os.chdir('..')
+  print(f'Move to {os.getcwd()}')
+
+import config
+
+dhs_data_folder = config.DHS_FOLDER
+data_folder = config.RESIDENTIAL_DATA_PATH
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4, data_folder='../Data/DHSSurvey/'):
+def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
 
     # Read-in the data on appliances and energy tiers
-    data_apps = read_csv(data_folder + './appliance_energy_use.csv', header=1)
+    data_apps = read_csv(data_folder / 'appliance_energy_use.csv', header=1)
     # Identify columns that give appliance energy consumption
     cols = [c for c in data_apps.columns if "consumption" in c]
     # Read columns into 2-d array for appliance consumption
@@ -14,8 +27,7 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4, data_folder='..
     appliance = np.array(data_apps['Appliance'])  # Appliance names
 
     # Read-in the data from the survey of households
-    infile = data_folder + 'household_data.csv'
-    data = read_csv(infile)
+    data = read_csv(config.DHS_HOUSEHOLD_DATA_CSV)
     Nh = data.shape[0]
     print('Read data on', Nh, 'survey households')
     # Read columns into 2d array on appliance usage
@@ -60,9 +72,9 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4, data_folder='..
     energy_use = energy_use*(household_size/nominal_household_size)**elas
 
     # Write or overwrite column in data file with estimated energy use values
-    data['Energy Use'] = energy_use
-    data.to_csv(infile, index=None)
-    print('Written energy use estimates to', infile)
+    data['Electricity Use'] = energy_use
+    data.to_csv(config.DHS_HOUSEHOLD_DATA_CSV, index=None)
+    print('Written energy use estimates to', config.DHS_HOUSEHOLD_DATA_CSV)
 
 
 if __name__ == "__main__":
