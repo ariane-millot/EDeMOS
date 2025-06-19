@@ -8,6 +8,16 @@ from scipy.stats import norm
 from scipy.interpolate import griddata
 from scipy.optimize import curve_fit
 
+# Check if we are running the notebook directly, if so move workspace to parent dir
+import sys
+import os
+currentdir = os.path.abspath(os.getcwd())
+if os.path.basename(currentdir) != 'EDeMOS':
+  sys.path.insert(0, os.path.dirname(currentdir))
+  os.chdir('..')
+  print(f'Move to {os.getcwd()}')
+
+import config
 
 # Define probability distribution for selection of simulated subgroups of households from survey
 def selection_window(x, x0, s, c):
@@ -26,34 +36,35 @@ def logistic(x, a, b, x0):
 np.random.seed(42)
 
 
-def estimate_energy_rwi_link_national(grid, app_config):
+def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS_MAKE_FIGURE,
+                                      recalculate_energies = config.DHS_RECALCULATE_ENERGIES,
+                                      simulate_cell_groups = config.DHS_SIMULATE_CELL_GROUPS,
+                                      recalculate_energy_perhh = config.DHS_RECALCULATE_ENERGY_PERHH):
     np.random.seed(42)
 
     # To produce graphs of the simulated cell groups, set simulate_cell_groups = True
     # To produce graphs showing the fitting function, set simulate_cell_groups = False and recalculate_energies = True
 
-    data_folder = app_config.DHS_FOLDER
     figures_folder = app_config.FIGURES_DHS_FOLDER
-    make_figure = app_config.DHS_MAKE_FIGURE
-    recalculate_energies = app_config.DHS_RECALCULATE_ENERGIES # If false will just use any existing value in grid data
+    # recalculate_energies = app_config.DHS_RECALCULATE_ENERGIES # If false will just use any existing value in grid data
     # recalculate_energies = True
-    simulate_cell_groups = app_config.DHS_SIMULATE_CELL_GROUPS # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
+    # simulate_cell_groups = app_config.DHS_SIMULATE_CELL_GROUPS # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
     # simulate_cell_groups = True
-    recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
+    # recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
 
     if recalculate_energy_perhh:
         from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
         compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
-    infile_DHS = data_folder / 'household_data.csv'
+    infile_DHS = app_config.DHS_HOUSEHOLD_DATA_CSV
     dataDHS_all = read_csv(infile_DHS)
     wealth_index = 1e-5 * dataDHS_all["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
     if make_figure:
         min_wealth = wealth_index.min()
         max_wealth = wealth_index.max()
         xl = np.array([min_wealth,max_wealth])  # Limits for x-axis of plots (wealth index)
-        yl = np.array([0, dataDHS_all["Energy Use"].max()])  # Limits for y-axis on scatter plots (energy use)
+        yl = np.array([0, dataDHS_all[app_config.DHS_ELEC_KWH_ASSESSED_SURVEY].max()])  # Limits for y-axis on scatter plots (energy use)
             
     region_type = ['urban', 'rural']
     legend_loc = ['lower right','upper left']
@@ -80,7 +91,7 @@ def estimate_energy_rwi_link_national(grid, app_config):
         has_access = np.flatnonzero(elec>0)
         no_access = np.flatnonzero(elec==0)
         rwi_DHS = 1e-5 * dataDHS["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
-        eu = dataDHS["Energy Use"].to_numpy(float)
+        eu = dataDHS[app_config.DHS_ELEC_KWH_ASSESSED_SURVEY].to_numpy(float)
 
         # Data from the grid
         col_HH = 'HH_' + region_type[i].lower()
@@ -158,7 +169,7 @@ def estimate_energy_rwi_link_national(grid, app_config):
                     print('Unable to fit rwi vs eu')
             grid['elec_demand_kWh_'+region_type[i].lower()] = energy_demand[i,:]
         else:
-            eu_group = grid['Elec demand '+region_type[i].lower()][include]
+            eu_group = grid['elec_demand_kWh_'+region_type[i].lower()][include]
             rwi_group = grid['Simulated group rwi '+region_type[i].lower()][include]
             f_group = f_elec.copy()
         Etot = (grid['elec_demand_kWh_'+region_type[i].lower()]*grid[col_HH]).sum()
@@ -278,11 +289,9 @@ def estimate_energy_rwi_link_national(grid, app_config):
 
 
 if __name__ == "__main__":
-    data_folder = '../Data/DHSSurvey/'
-    figures_folder = '../Figures/'
-    infile = '../../Outputs/' + 'data_res.csv'  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
+    infile = config.RESIDENTIAL_GRID_FILE  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
     grid = read_csv(infile)
 
-    estimate_energy_rwi_link_national(grid, data_folder, figures_folder)
+    estimate_energy_rwi_link_national(grid, config, recalculate_energy_perhh=True)
     grid.to_csv(infile,index=False)
 
