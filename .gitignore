@@ -13,4 +13,5 @@ Buildings/Figures/*
 Buildings/Outputs/*
 Industry/Data/*
 !Industry/Data/mines/Mineral_Facilities_correctedInput.csv
+Industry/Outputs/*
 convert_crs.py
