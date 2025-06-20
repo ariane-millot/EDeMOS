@@ -11,9 +11,6 @@ Buildings/Data/*
 !Buildings/Data/appliance_energy_use.csv
 Buildings/Figures/*
 Buildings/Outputs/*
-Industry/Data/UN stats
-Industry/Data/mines
-Industry/Data/USGS survey
-Industry/Data/Archives
-Industry/Archives
+Industry/Data/*
+!Industry/Data/mines/Mineral_Facilities_correctedInput.csv
 convert_crs.py
