@@ -132,9 +132,16 @@ FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 # -----------------------------------------------------------------------------
 # INDUSTRY PARAMETERS
 # -----------------------------------------------------------------------------
-MINES_DATA_PATH = DATA_FOLDER / "Industry" / "Data" / "mines"
+MINES_DATA_PATH = ROOT_DIR / "Industry/Data/mines"
 MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
-MINES_OUTPUT_GPKG = "mineral_facilities_zambia.gpkg" # .gpkg extension included
+MINES_OUTPUT_GPKG = MINES_DATA_PATH / "mineral_facilities_zambia.gpkg"
+MINES_OUTPUT_CSV = MINES_DATA_PATH / "mineral_facilities_zambia.csv"
+COL_ELEC_CONS_TJ = "ind_elec_TJ"
+COL_OIL_CONS_TJ = "ind_diesel_TJ"
+COL_TOTAL_CONS_TJ = "ind_total_energy_TJ"
+COL_COPPER_ELEC_CONS_TJ = "copper_elec_TJ"
+
+INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
 
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
@@ -190,11 +197,13 @@ DHS_SURVEY_HH_old_to_new_names = {
 
 # UN Energy Balance codes and year
 UN_ELEC_CODE = "B07_EL"
+UN_OIL_CODE = "B03_OP"
 UN_HH_TRANSACTION_CODE = "B50_1231"
 UN_SERVICES_TRANSACTION_CODE = "B49_1235"
 UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specified
+UN_INDUSTRY_NFM = "B29_1214a"
+UN_INDUSTRY_MINING = "B33_1214e"
 UN_ENERGY_YEAR = YEAR
-
 
 # -----------------------------------------------------------------------------
 # ANALYSIS PARAMETERS
@@ -303,3 +312,5 @@ COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
 # -----------------------------------------------------------------------------
 RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
 SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
+INDUSTRY_SHP_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.shp'
+INDUSTRY_GEOJSON_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.geojson'
