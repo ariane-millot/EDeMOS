@@ -1,4 +1,3 @@
-from tkinter import filedialog, messagebox
 import rasterio
 from rasterstats import zonal_stats
 import datetime
@@ -6,6 +5,7 @@ import geopandas as gpd
 import json
 import os
 import pandas as pd
+import config
 
 
 # Define extraction functions
@@ -59,7 +59,7 @@ def convert_features_to_geodataframe(features, crs):
     return gdf
 
 
-def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, str=None):
+def spatialjoinvectors(column, admin, crs, clusters, val, filepath=None, str=None):
     if not filepath:
         raise ValueError("Filepath for spatialjoinvectors cannot be None or empty.")    
     # points=gpd.read_file(filedialog.askopenfilename(filetypes = (("shapefile","*.shp"),("all files","*.*"))))
@@ -68,7 +68,18 @@ def spatialjoinvectors(name, column, admin, crs, clusters, val, filepath=None, s
     points.head(5)
     
     points_clip = gpd.clip(points, admin)
-    points_clip.crs = 'epsg:4326'
+
+    try:
+        if points_clip.crs != config.CRS_WGS84:
+            raise KeyError(
+                f"Coordinate Reference System (CRS) mismatch: "
+                f"Expected '{config.CRS}', but got '{points.crs}'."
+            )
+        print("CRS matched successfully for points_correct.")
+    except KeyError as e:
+        print(f"Error: {e}")
+
+    # points_clip.crs = config.CRS_WGS84
     points_proj=points_clip.to_crs(crs)
     if str:
         points_proj[column] = points_proj[column].str.replace(',', '')
