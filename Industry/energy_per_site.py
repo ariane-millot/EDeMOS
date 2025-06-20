@@ -10,16 +10,17 @@
 import pandas as pd
 import os
 import numpy as np
-from copy import copy
 import geopandas as gpd
 import fiona
+import config
 
-def calc_energy_per_site(path_mines, input_table, display_name):
+def calc_energy_per_site(app_config):
   
-    country = "Zambia"
+    country = app_config.COUNTRY
     metals = ["Copper", "Cobalt", "Gold", "Nickel", "Manganese"]
     electrowon_names = ["Slag Recovery","Heap Leach","Leach","Solvent Extraction-Electrowinning", "Electrowinning", "Solvent Extraction"]
-    
+
+    input_table = pd.read_csv(app_config.MINES_INPUT_CSV)
     input_table = input_table[input_table["Country"]==country]
     input_table = input_table.loc[input_table["DsgAttr02"].isin(metals)].reset_index()
     
@@ -231,16 +232,21 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     # calculate consumed energy:  multiply production and specific energy consumption
     for en_carrier in spec_energy["Copper"].keys():
         output_table[en_carrier +"_TJ"] = np.array(output_table["Metal content [kt]"])*np.array(output_table["Spec energy "+en_carrier+" [GJ/t]"])
+    # Rename the columns
+    output_table = output_table.rename(columns={
+        "Elec_TJ": app_config.COL_ELEC_CONS_TJ,
+        "Diesel_TJ": app_config.COL_OIL_CONS_TJ
+    })
 
     # ---- ADDITION FOR COPPER-SPECIFIC ELECTRICITY CONSUMPTION ----
     # Initialize the new column with 0
-    output_table["Copper_Elec_Cons_TJ"] = 0.0
+    output_table[app_config.COL_COPPER_ELEC_CONS_TJ] = 0.0
 
     # Create a boolean mask for rows where the metal is Copper
     is_copper_mask = (output_table["DsgAttr02"] == "Copper")
 
     # For copper rows, calculate electricity consumption.
-    output_table["Copper_Elec_Cons_TJ"] = np.where(
+    output_table[app_config.COL_COPPER_ELEC_CONS_TJ] = np.where(
         output_table["DsgAttr02"] == "Copper",  # Condition
         output_table["Metal content [kt]"] * output_table["Spec energy Elec [GJ/t]"], # Value if True
         0.0  # Value if False
@@ -250,11 +256,24 @@ def calc_energy_per_site(path_mines, input_table, display_name):
     output_table["id"] = range(1, len(output_table)+1)
     
     ## Export to csv
-    output_table.to_csv(os.path.join(path_mines, display_name + ".csv"), encoding='utf-8', index=False)
+    output_table.to_csv(app_config.MINES_OUTPUT_CSV, encoding='utf-8', index=False)
     
     ## Converting df to gdf for further processing & extracting gpkg
     output_table_gdf = gpd.GeoDataFrame(output_table,
-                                        geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs='EPSG:4326')
-    
-    output_table_gdf.to_file(os.path.join(path_mines, ((display_name + ".gpkg"))), 
-                                          layer=display_name, driver="GPKG")
+                                        geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs=app_config.CRS_WGS84)
+    if os.path.exists(app_config.MINES_OUTPUT_GPKG):
+        print("File exists. Deleting it now...")
+        os.remove(app_config.MINES_OUTPUT_GPKG)
+        print("File deleted.")
+    output_table_gdf.to_file(app_config.MINES_OUTPUT_GPKG, layer="mines", driver="GPKG", mode='w')
+    try:
+        layer_names = fiona.listlayers(app_config.MINES_OUTPUT_GPKG)
+        print(f"Layers found in '{app_config.MINES_OUTPUT_GPKG}':")
+        for name in layer_names:
+            print(f"- {name}")
+    except fiona.errors.DriverError as e:
+        print(f"Error: Could not open the file. Please check the path and ensure it's a valid GeoPackage file.\nDetails: {e}")
+
+
+if __name__ == "__main__":
+    calc_energy_per_site(config)
