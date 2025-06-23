@@ -38,18 +38,17 @@ if os.path.basename(currentdir) != 'EDeMOS':
 import config
 importlib.reload(config)
 
-in_path = config.RWI_PATH
-out_path = in_path
+out_path = config.RWI_PATH
 
 ## RWI layer
-rwi_path = in_path
+rwi_path = config.RWI_PATH
 rwi_name = config.RWI_FILE_CSV
 
 ## Import Relative Wealth Index | convert to geodf | export as gpkg
 rwi = pd.read_csv(rwi_path / rwi_name)
 rwi_gdf = gpd.GeoDataFrame(rwi, geometry=gpd.points_from_xy(rwi.longitude, rwi.latitude), crs=config.CRS_WGS84)
 filename_without_ext = rwi_name.split(".")[0]
-rwi_gdf.to_file(os.path.join(rwi_path, f"{filename_without_ext}.gpkg"), driver="GPKG")
+rwi_gdf.to_file(os.path.join(rwi_path, f"{filename_without_ext}_{config.COUNTRY}.gpkg"), driver="GPKG")
 
 # rwi_gdf.to_file(os.path.join(rwi_path,"{c}".format(c=rwi_name.split(".")[0])), driver="GPKG")
 
