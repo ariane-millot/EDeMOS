@@ -234,19 +234,19 @@ def calc_energy_per_site(app_config):
         output_table[en_carrier +"_TJ"] = np.array(output_table["Metal content [kt]"])*np.array(output_table["Spec energy "+en_carrier+" [GJ/t]"])
     # Rename the columns
     output_table = output_table.rename(columns={
-        "Elec_TJ": app_config.COL_ELEC_CONS_TJ,
-        "Diesel_TJ": app_config.COL_OIL_CONS_TJ
+        "Elec_TJ": app_config.COL_IND_ELEC_TJ,
+        "Diesel_TJ": app_config.COL_IND_OIL_TJ
     })
 
     # ---- ADDITION FOR COPPER-SPECIFIC ELECTRICITY CONSUMPTION ----
     # Initialize the new column with 0
-    output_table[app_config.COL_COPPER_ELEC_CONS_TJ] = 0.0
+    output_table[app_config.COL_IND_COPPER_ELEC_TJ] = 0.0
 
     # Create a boolean mask for rows where the metal is Copper
     is_copper_mask = (output_table["DsgAttr02"] == "Copper")
 
     # For copper rows, calculate electricity consumption.
-    output_table[app_config.COL_COPPER_ELEC_CONS_TJ] = np.where(
+    output_table[app_config.COL_IND_COPPER_ELEC_TJ] = np.where(
         output_table["DsgAttr02"] == "Copper",  # Condition
         output_table["Metal content [kt]"] * output_table["Spec energy Elec [GJ/t]"], # Value if True
         0.0  # Value if False

@@ -42,7 +42,7 @@ ADMIN_LAYER_COUNTRY = "ADM_ADM_0"
 ADMIN_REGION_COLUMN_NAME = "NAME_1"
 
 # hexagon size
-HEX_SIZE = 6 ## resolution info here https://h3geo.org/docs/core-library/restable
+HEX_SIZE = 7 ## resolution info here https://h3geo.org/docs/core-library/restable
 
 # HEXAGON FILE NAME
 H3_GRID_HEX_SHP = "h3_grid_at_hex.shp" # Located in current OUTPUT_DIR
@@ -136,10 +136,12 @@ MINES_DATA_PATH = ROOT_DIR / "Industry/Data/mines"
 MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
 MINES_OUTPUT_GPKG = MINES_DATA_PATH / "mineral_facilities_zambia.gpkg"
 MINES_OUTPUT_CSV = MINES_DATA_PATH / "mineral_facilities_zambia.csv"
-COL_ELEC_CONS_TJ = "ind_elec_TJ"
-COL_OIL_CONS_TJ = "ind_diesel_TJ"
-COL_TOTAL_CONS_TJ = "ind_total_energy_TJ"
-COL_COPPER_ELEC_CONS_TJ = "copper_elec_TJ"
+COL_IND_ELEC_TJ = "ind_elec_TJ"
+COL_IND_ELEC_GWH = "ind_elec_GWh"
+COL_IND_ELEC_KWH = "ind_elec_kWh"
+COL_IND_OIL_TJ = "ind_diesel_TJ"
+COL_IND_TOTAL_TJ = "ind_total_energy_TJ"
+COL_IND_COPPER_ELEC_TJ = "copper_elec_TJ"
 
 INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
 INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
@@ -295,8 +297,9 @@ COL_RES_ELEC_PER_HH_LOG = 'elec_perHH_kWh_log'
 COL_RES_ELEC_PER_HH_DHS = 'elec_perHH_kWh_DHS'
 COL_RES_ELEC_KWH_METH1 = 'res_elec_kWh_meth1'
 COL_RES_ELEC_KWH_METH2 = 'res_elec_kWh_meth2'
-COL_RES_ELEC_KWH_METH1_SCALED = 'resElec_kWh_meth1_scaled'
-COL_RES_ELEC_KWH_METH2_SCALED = 'resElec_kWh_meth2_scaled'
+COL_RES_ELEC_KWH_METH1_SCALED = 'res_elec_kWh_meth1_scaled'
+COL_RES_ELEC_KWH_METH2_SCALED = 'res_elec_kWh_meth2_scaled'
+COL_RES_ELEC_KWH_FINAL = 'res_elec_kWh_final'
 
 COL_SER_BUI = 'serBui'
 COL_SER_BUI_ACC = 'serBUi_access'
@@ -307,6 +310,12 @@ COL_TOTAL_EMPLOYEE_WITH_ACCESS = 'total_employee_withaccess'
 COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_emp'
 COL_SER_ELEC_KWH_WEIGHTED = 'ser_elec_kWh_weighted'
 COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
+
+# -----------------------------------------------------------------------------
+# TOTAL PARAMETERS
+# -----------------------------------------------------------------------------
+
+COL_TOTAL_ELEC_KWH = 'total_elec_kWh'
 
 # -----------------------------------------------------------------------------
 # RESULTS FILES NAME
