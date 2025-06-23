@@ -88,7 +88,7 @@ ax.set_ylabel('Latitude (°)')
 
 # Compute the distance-per-pixel of the map
 # see https://geopandas.org/en/latest/gallery/matplotlib_scalebar.html#Geographic-coordinate-system-(degrees)
-assert admin_gdf.crs == 'EPSG:4326'
+assert admin_gdf.crs == config.CRS_WGS84
 from shapely.geometry.point import Point
 points = gpd.GeoSeries(
     [Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=4326
