@@ -311,6 +311,8 @@ COL_SER_ELEC_KWH_EMP = 'ser_elec_kWh_emp'
 COL_SER_ELEC_KWH_WEIGHTED = 'ser_elec_kWh_weighted'
 COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
 
+COL_BUI_ELEC_KWH_FINAL = 'bui_elec_kWh_final'
+
 # -----------------------------------------------------------------------------
 # TOTAL PARAMETERS
 # -----------------------------------------------------------------------------
@@ -324,4 +326,4 @@ RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
 SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
 BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{COUNTRY}.gpkg'
 INDUSTRY_GPKG_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.gpkg'
-TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_demand_{COUNTRY}.gpkg'
+TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_consumption_{COUNTRY}.gpkg'
