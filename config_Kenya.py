@@ -70,13 +70,13 @@ FIGURES_DHS_FOLDER = ROOT_DIR / "Buildings" / "Figures" # As used in estimate_en
 
 # WorldPop files
 # Link: https://apps.worldpop.org/peanutButter/
-WP_BUILDINGS_COUNT_TIF = f"{ISO_CODE}_buildings_v2_0_count.tif"
-WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v2_0_urban.tif"
+WP_BUILDINGS_COUNT_TIF = f"{ISO_CODE}_buildings_v1_1_count.tif"
+WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v1_1_urban.tif"
 
 # Lighting file
 # # set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
 # Link: http://www-personal.umich.edu/~brianmin/HREA/data.html
-HREA_LIGHTING_TIF = f"{COUNTRY}_set_lightscore_sy_2019.tif"
+HREA_LIGHTING_TIF = f"{COUNTRY}_set_lightscore_2019.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
@@ -90,7 +90,7 @@ FALCHETTA_TIERS_TIF = f"tiersofaccess_2018_band1_{COUNTRY}.tif"
 
 # GDP file Kummu dataset
 # Link https://www.nature.com/articles/sdata20184#Sec9
-# GDP_PPP_TIF = "GDP_PPP_30arcsec_v3_band3_Zambia.tif"
+# GDP_PPP_TIF = f"GDP_PPP_30arcsec_v3_band3_{COUNTRY}.tif"
 
 # UN Energy Balance file
 # https://data.un.org/SdmxBrowser/start
