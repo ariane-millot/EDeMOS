@@ -238,7 +238,7 @@ def load_census_data(app_config):
     print("Loading census data...")
     if app_config.PROVINCE_DATA_AVAILABLE:
         # Provincial census data
-        census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_ZAMBIA_PROVINCE_CSV)
+        census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_PROVINCE_CSV)
         df_censusdata = pd.read_csv(census_path)
         # Process provincial census data
         data_HH = df_censusdata[['Region', 'Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
@@ -249,7 +249,7 @@ def load_census_data(app_config):
         print(f"Provincial census data loaded: {df_censusdata.shape}")
     else:
         # National census data
-        national_census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_ZAMBIA_NATIONAL_CSV)
+        national_census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_NATIONAL_CSV)
         df_censusdata = pd.read_csv(national_census_path)
         data_HH = df_censusdata[['Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
         print(f"National census data loaded: {df_censusdata.shape}")
