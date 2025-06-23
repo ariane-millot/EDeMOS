@@ -142,6 +142,7 @@ COL_TOTAL_CONS_TJ = "ind_total_energy_TJ"
 COL_COPPER_ELEC_CONS_TJ = "copper_elec_TJ"
 
 INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
+INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
@@ -312,5 +313,6 @@ COL_SER_ELEC_KWH_FINAL = 'ser_elec_kWh_final' # Final services result
 # -----------------------------------------------------------------------------
 RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
 SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
-INDUSTRY_SHP_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.shp'
-INDUSTRY_GEOJSON_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.geojson'
+BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{COUNTRY}.gpkg'
+INDUSTRY_GPKG_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.gpkg'
+TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_demand_{COUNTRY}.gpkg'
