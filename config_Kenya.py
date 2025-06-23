@@ -6,8 +6,8 @@ ROOT_DIR = Path( __file__ ).parent.absolute()
 # -----------------------------------------------------------------------------
 # AREA OF INTEREST CHOICE -- to update with the country
 # -----------------------------------------------------------------------------
-COUNTRY = "Zambia"
-ISO_CODE = "ZMB"
+COUNTRY = "Kenya"
+ISO_CODE = "KEN"
 # Define area of interest
 AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
 ADMIN_GPKG = f"gadm41_{ISO_CODE}.gpkg"
@@ -104,14 +104,14 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{COUNTRY}.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = GRID_PATH / COUNTRY / "Zambia - MVLines" / "Zambia - MVLines.shp"
-HV_LINES_SHP = GRID_PATH / COUNTRY /"Zambia - HVLines" / "HVLines.shp"
+MV_LINES_SHP = GRID_PATH / COUNTRY / "Transmission lines 132kV" / "132kV.shp"
+HV_LINES_SHP = GRID_PATH / COUNTRY /"Transmission lines 220kV" / "220kV.shp"
 
 # Census data files
 # The file should contain the following data, region, HH urban, rural, total, size of HH urban/rural
 PROVINCE_DATA_AVAILABLE = True
-CENSUS_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_Zambia.csv"
-CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_Zambia_National.csv"
+CENSUS_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY /"Census_KEN.csv"
+CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_KEN_National.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
 # 1. Run read_DHS_hh_to_df.py in HouseholdEnergyUse folder to generate the household_data.csv
@@ -150,8 +150,8 @@ INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
 # -----------------------------------------------------------------------------
-DHS_HH_SURVEY_FILE = 'ZMHR71DT/ZMHR71FL'
-DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
+DHS_HH_SURVEY_FILE = 'KEHR8CFL'
+DHS_SERVICES_SURVEY_FILE = 'KEIR8CFL'
 
 # Households labels
 # Choose the labels to be selected from the .do file
