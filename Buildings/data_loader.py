@@ -252,8 +252,7 @@ def load_census_data(app_config):
         census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_PROVINCE_CSV)
         df_censusdata = pd.read_csv(census_path)
         # Process provincial census data
-        data_HH = df_censusdata[['Region', 'Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
-        data_HH.rename(columns={'Region': 'region', 'Urban': 'HH_urban', 'Rural': 'HH_rural'}, inplace=True)
+        data_HH = df_censusdata[['region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural']]
         data_HH.set_index('region', inplace=True)
         data_HH['HH_total'] = data_HH['HH_urban'] + data_HH['HH_rural']
         data_HH = data_HH.astype(float)
@@ -264,7 +263,6 @@ def load_census_data(app_config):
         df_censusdata = pd.read_csv(national_census_path)
         data_HH = df_censusdata[['Urban', 'Rural','size_HH_urban', 'size_HH_rural']]
         print(f"National census data loaded: {df_censusdata.shape}")
-    df_censusdata.rename(columns={'Region': 'region'}, inplace=True)
     df_censusdata.set_index('region', inplace=True)
     # return df_censusdata, data_HH
     return data_HH, df_censusdata
