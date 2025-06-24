@@ -195,29 +195,40 @@ def load_un_stats(app_config):
     eb = pd.read_csv(eb_path)
 
     # Residential electricity
-    res_elec_tj_series = eb.loc[
+    res_elec_tj_value = eb.loc[
         (eb['COMMODITY'] == app_config.UN_ELEC_CODE) &
         (eb['TRANSACTION'] == app_config.UN_HH_TRANSACTION_CODE) &
         (eb['TIME_PERIOD'] == app_config.UN_ENERGY_YEAR),
         'OBS_VALUE'
     ]
-    if res_elec_tj_series.empty:
+    if res_elec_tj_value.empty:
         raise ValueError(f"No UN residential energy data found for year {app_config.UN_ENERGY_YEAR} with specified codes.")
-    res_elec_tj_series = pd.to_numeric(res_elec_tj_series.str.replace(',', '').iloc[0])
-    total_residential_elec_GWh = res_elec_tj_series / 3.6
+    # Check if the Series contains strings.
+    if pd.api.types.is_string_dtype(res_elec_tj_value):
+        # If it's a string type, remove commas from the entire series
+        res_elec_tj_value = res_elec_tj_value.str.replace(',', '').iloc[0]
+    else:
+        res_elec_tj_value = res_elec_tj_value.iloc[0]
+    res_elec_tj_value = pd.to_numeric(res_elec_tj_value)
+    total_residential_elec_GWh = res_elec_tj_value / 3.6
     print(f"Total Residential Energy (UN Stats): {total_residential_elec_GWh:.0f} GWh")
 
     # Services electricity
-    ser_elec_tj_series = eb.loc[
+    ser_elec_tj_value = eb.loc[
         (eb['COMMODITY'] == app_config.UN_ELEC_CODE) &
         (eb['TRANSACTION'] == app_config.UN_SERVICES_TRANSACTION_CODE) &
         (eb['TIME_PERIOD'] == app_config.UN_ENERGY_YEAR),
         'OBS_VALUE'
     ]
-    if ser_elec_tj_series.empty:
+    if ser_elec_tj_value.empty:
         raise ValueError(f"No UN services energy data found for transaction {app_config.UN_SERVICES_TRANSACTION_CODE}.")
-    ser_elec_tj_series = pd.to_numeric(ser_elec_tj_series.str.replace(',', '').iloc[0])
-    total_services_elec_GWh = ser_elec_tj_series / 3.6
+    if pd.api.types.is_string_dtype(ser_elec_tj_value):
+        # If it's a string type, remove commas from the entire series
+        ser_elec_tj_value = ser_elec_tj_value.str.replace(',', '').iloc[0]
+    else:
+        ser_elec_tj_value = ser_elec_tj_value.iloc[0]
+    ser_elec_tj_value = pd.to_numeric(ser_elec_tj_value)
+    total_services_elec_GWh = ser_elec_tj_value / 3.6
     print(f"Total Services Energy (UN Stats): {total_services_elec_GWh:.0f} GWh")
 
     return total_residential_elec_GWh, total_services_elec_GWh
