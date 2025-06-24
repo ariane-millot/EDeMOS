@@ -75,10 +75,9 @@ hexagons = hexagons.drop_duplicates(subset='h3_index').reset_index(drop=True)
 # Plot basemap
 plt.rcParams.update({'font.size': 22})
 fig, ax = plt.subplots(figsize=(25, 15))
-# fig, ax = plt.subplots(figsize=(4, 3))
 
 
-# hex_reproj = hexagons.to_crs(32619)  # Convert the dataset to a coordinate
+# Convert the dataset to a coordinate
 hexagons.plot(ax=ax, edgecolor='brown', alpha=0.2)
 admin_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
 ax.set_aspect('equal', 'box')
@@ -112,7 +111,7 @@ ax.add_artist(scalebar)
 
 plt.show()
 # Save plot as figure
-plt.savefig(config.OUTPUT_DIR / 'admin_level_basemap.png', bbox_inches='tight')
+plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.png', bbox_inches='tight')
 
 hexagons['id'] = range(1, len(hexagons)+1)
 
@@ -120,6 +119,6 @@ hexagons['id'] = range(1, len(hexagons)+1)
 #hexagons.to_csv(out_path + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
 hexagons.to_file(config.OUTPUT_DIR / f'h3_grid_at_hex_{size}.shp', index=False)
 hexagons.to_file(config.OUTPUT_DIR / config.H3_GRID_HEX_SHP, index=False) # file used in the other scripts
-hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
-admin_gdf.to_file(config.OUTPUT_DIR / f'area_gdf.gpkg', index=False)
-admin_gdf.to_file(config.OUTPUT_DIR  / f'area_gdf.geojson', driver='GeoJSON', index=False)
+# hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
+# admin_gdf.to_file(config.OUTPUT_DIR / f'area_gdf.gpkg', index=False)
+# admin_gdf.to_file(config.OUTPUT_DIR  / f'area_gdf.geojson', driver='GeoJSON', index=False)
