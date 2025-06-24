@@ -53,7 +53,7 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
     # recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
 
     if recalculate_energy_perhh:
-        from estimate_energy_perhh_DHS import compute_energy_perhh_DHS
+        from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_DHS
         compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
@@ -65,8 +65,7 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
         max_wealth = wealth_index.max()
         xl = np.array([min_wealth,max_wealth])  # Limits for x-axis of plots (wealth index)
         yl = np.array([0, dataDHS_all[app_config.DHS_ELEC_KWH_ASSESSED_SURVEY].max()])  # Limits for y-axis on scatter plots (energy use)
-            
-    region_type = ['urban', 'rural']
+
     legend_loc = ['lower right','upper left']
 
     if recalculate_energies:
@@ -82,10 +81,12 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
         Na = 20 # Number of bins in access rate
         x = np.arange(xl[0],xl[1],0.1) # array to plot fitting function (if needed)
 
-    for i in range(2):
+    residence_types = ['urban', 'rural']
+    i = 0 # used for figures
+    for residence_type in residence_types:
 
         # Data from DHS dataset
-        dataDHS = dataDHS_all[dataDHS_all["Type of place of residence"] == i + 1]
+        dataDHS = dataDHS_all[dataDHS_all["Type of place of residence"] == residence_type]
         elec = dataDHS["Electricity"].to_numpy(int)
         # Find households with or without access
         has_access = np.flatnonzero(elec>0)
@@ -94,8 +95,8 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
         eu = dataDHS[app_config.DHS_ELEC_KWH_ASSESSED_SURVEY].to_numpy(float)
 
         # Data from the grid
-        col_HH = 'HH_' + region_type[i].lower()
-        col_HH_access = 'HHwithAccess_' + region_type[i].lower()[:3]
+        col_HH = 'HH_' + residence_type
+        col_HH_access = 'HHwithAccess_' + residence_type[:3]
         include = np.flatnonzero(grid[col_HH_access]>0)
         f_elec = grid[col_HH_access][include].to_numpy(float)/grid[col_HH][include].to_numpy(float)
         rwi_grid = grid['rwi'][include].to_numpy(float)
@@ -154,7 +155,7 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
                 energy_demand[i,include] = eu_group.copy()
                 rwi_simulated_group[i,include] = rwi_group.copy()
                 # Add/update group parameters in grid data
-                grid['Simulated group rwi '+region_type[i].lower()] = rwi_simulated_group[i,:]
+                grid['Simulated group rwi '+residence_type] = rwi_simulated_group[i,:]
             else:
                 # To avoid simulating groups for each cell, energy use can be approximated by 
                 # using the closest match to rwi_grid and f_elec from the groups created above
@@ -167,16 +168,16 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
                     param,cov = curve_fit(logistic,np.stack((rwi_group.flatten(),f_group.flatten())),eu_group.flatten(),p0 = param)
                 except RuntimeError:
                     print('Unable to fit rwi vs eu')
-            grid['elec_demand_kWh_'+region_type[i].lower()] = energy_demand[i,:]
+            grid['elec_demand_kWh_'+residence_type] = energy_demand[i,:]
         else:
-            eu_group = grid['elec_demand_kWh_'+region_type[i].lower()][include]
-            rwi_group = grid['Simulated group rwi '+region_type[i].lower()][include]
+            eu_group = grid['elec_demand_kWh_'+residence_type][include]
+            rwi_group = grid['Simulated group rwi '+residence_type][include]
             f_group = f_elec.copy()
-        Etot = (grid['elec_demand_kWh_'+region_type[i].lower()]*grid[col_HH]).sum()
-        print(region_type[i]+' total = {:,.0f} GWh/year'.format(Etot*1e-6))
-        print(region_type[i]+' average per household = {:,.0f} kWh/year'.format(Etot/grid[col_HH_access].sum()))
-        print(region_type[i] + ' min = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+region_type[i].lower()].min()) +
-              ' max = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+region_type[i].lower()].max()))
+        Etot = (grid['elec_demand_kWh_'+residence_type]*grid[col_HH]).sum()
+        print(residence_type+' total = {:,.0f} GWh/year'.format(Etot*1e-6))
+        print(residence_type+' average per household = {:,.0f} kWh/year'.format(Etot/grid[col_HH_access].sum()))
+        print(residence_type + ' min = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+residence_type].min()) +
+              ' max = {:,.0f} kWh/year'.format(grid['elec_demand_kWh_'+residence_type].max()))
         
         if make_figure:
 
@@ -275,14 +276,16 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
                         label=labels[2])
             ax2.legend(loc=legend_loc[i],fontsize=legend_fontsize)
 
-            outfile = 'rwi_vs_'+y_value+'_'+suffix+region_type[i].lower()+'.png'
+            outfile = 'rwi_vs_'+y_value+'_'+ suffix + residence_type +'.png'
             pathlib.Path(figures_folder).mkdir(exist_ok=True)
-            fig.suptitle(f'{letters[i]} {region_type[i].capitalize()}')
+            fig.suptitle(f'{letters[i]} {residence_type}')
             plt.tight_layout()
             plt.savefig(figures_folder / outfile, dpi=300)
             print('Created ' + outfile)
             plt.show()
             plt.close()
+
+        i = i + 1
 
             # # Add the assessed energy use to the grid
     return grid
