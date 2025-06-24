@@ -86,7 +86,7 @@ RWI_FILE_CSV = f"{ISO_CODE.lower()}_relative_wealth_index.csv"
 
 # Falchetta Tiers file
 # run the script transform-nc_to_tiff.py to generate .tif file
-FALCHETTA_TIERS_TIF = f"tiersofaccess_2018_band1_{COUNTRY}.tif"
+FALCHETTA_TIERS_TIF = f"tiersofaccess_SSA_2018_band1_{COUNTRY}.tif"
 
 # GDP file Kummu dataset
 # Link https://www.nature.com/articles/sdata20184#Sec9
@@ -94,7 +94,7 @@ FALCHETTA_TIERS_TIF = f"tiersofaccess_2018_band1_{COUNTRY}.tif"
 
 # UN Energy Balance file
 # https://data.un.org/SdmxBrowser/start
-UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{COUNTRY}.csv"
+UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network

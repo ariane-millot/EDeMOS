@@ -39,7 +39,7 @@ TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S)
 # -----------------------------------------------------------------------------
 
 # hexagon size
-HEX_SIZE = 6 ## resolution info here https://h3geo.org/docs/core-library/restable
+HEX_SIZE = 5 ## resolution info here https://h3geo.org/docs/core-library/restable
 
 # HEXAGON FILE NAME
 H3_GRID_HEX_SHP = f"h3_grid_at_hex_{COUNTRY}.shp" # Located in current OUTPUT_DIR
@@ -76,7 +76,7 @@ WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v1_1_urban.tif"
 # Lighting file
 # # set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
 # Link: http://www-personal.umich.edu/~brianmin/HREA/data.html
-HREA_LIGHTING_TIF = f"{COUNTRY}_set_lightscore_2019.tif"
+HREA_LIGHTING_TIF = f"{ISO_CODE}_set_lightscore_2019.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
@@ -86,7 +86,7 @@ RWI_FILE_CSV = f"{ISO_CODE.lower()}_relative_wealth_index.csv"
 
 # Falchetta Tiers file
 # run the script transform-nc_to_tiff.py to generate .tif file
-FALCHETTA_TIERS_TIF = f"tiersofaccess_2018_band1_{COUNTRY}.tif"
+FALCHETTA_TIERS_TIF = f"tiersofaccess_SSA_2018_band1_{COUNTRY}.tif"
 
 # GDP file Kummu dataset
 # Link https://www.nature.com/articles/sdata20184#Sec9
@@ -94,7 +94,7 @@ FALCHETTA_TIERS_TIF = f"tiersofaccess_2018_band1_{COUNTRY}.tif"
 
 # UN Energy Balance file
 # https://data.un.org/SdmxBrowser/start
-UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{COUNTRY}.csv"
+UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
