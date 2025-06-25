@@ -126,23 +126,6 @@ DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / f'pop15-49_share_{COUNTRY}.csv'
 RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
 FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
 
-# -----------------------------------------------------------------------------
-# INDUSTRY PARAMETERS
-# -----------------------------------------------------------------------------
-MINES_DATA_PATH = ROOT_DIR / "Industry/Data/mines"
-MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
-MINES_OUTPUT_GPKG = MINES_DATA_PATH / f"mineral_facilities_{COUNTRY.lower()}.gpkg"
-MINES_OUTPUT_CSV = MINES_DATA_PATH / f"mineral_facilities_{COUNTRY.lower()}.csv"
-COL_IND_ELEC_TJ = "ind_elec_TJ"
-COL_IND_ELEC_GWH = "ind_elec_GWh"
-COL_IND_ELEC_KWH = "ind_elec_kWh"
-COL_IND_OIL_TJ = "ind_diesel_TJ"
-COL_IND_TOTAL_TJ = "ind_total_energy_TJ"
-COL_IND_COPPER_ELEC_TJ = "copper_elec_TJ"
-COL_IND_ELEC_SCALED_TJ = "ind_elec_scaled_TJ"
-
-INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
-INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
