@@ -262,17 +262,17 @@ def calc_energy_per_site(app_config):
     output_table_gdf = gpd.GeoDataFrame(output_table,
                                         geometry=gpd.points_from_xy(output_table.Longitude, output_table.Latitude), crs=app_config.CRS_WGS84)
     if os.path.exists(app_config.MINES_OUTPUT_GPKG):
-        print("File exists. Deleting it now...")
+        print(f"File {app_config.MINES_OUTPUT_GPKG} exists. Deleting it now...")
         os.remove(app_config.MINES_OUTPUT_GPKG)
         print("File deleted.")
     output_table_gdf.to_file(app_config.MINES_OUTPUT_GPKG, layer="mines", driver="GPKG", mode='w')
-    try:
-        layer_names = fiona.listlayers(app_config.MINES_OUTPUT_GPKG)
-        print(f"Layers found in '{app_config.MINES_OUTPUT_GPKG}':")
-        for name in layer_names:
-            print(f"- {name}")
-    except fiona.errors.DriverError as e:
-        print(f"Error: Could not open the file. Please check the path and ensure it's a valid GeoPackage file.\nDetails: {e}")
+    # try:
+    #     layer_names = fiona.listlayers(app_config.MINES_OUTPUT_GPKG)
+    #     print(f"Layers found in '{app_config.MINES_OUTPUT_GPKG}':")
+    #     for name in layer_names:
+    #         print(f"- {name}")
+    # except fiona.errors.DriverError as e:
+    #     print(f"Error: Could not open the file. Please check the path and ensure it's a valid GeoPackage file.\nDetails: {e}")
 
 
 if __name__ == "__main__":
