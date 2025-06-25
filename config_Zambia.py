@@ -1,5 +1,6 @@
 from pyproj import CRS
 from pathlib import Path
+import numpy as np
 
 ROOT_DIR = Path( __file__ ).parent.absolute()
 
@@ -99,11 +100,11 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = GRID_PATH / COUNTRY / "Zambia - MVLines" / "Zambia - MVLines.shp"
-HV_LINES_SHP = GRID_PATH / COUNTRY /"Zambia - HVLines" / "HVLines.shp"
+MV_LINES_SHP = GRID_PATH / "Zambia - MVLines" / "Zambia - MVLines.shp"
+HV_LINES_SHP = GRID_PATH /"Zambia - HVLines" / "HVLines.shp"
 
 # Census data files
-# The file should contain the following data, region, HH urban, rural, total, size of HH urban/rural
+# The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
 PROVINCE_DATA_AVAILABLE = True
 CENSUS_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_Zambia.csv"
 CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_Zambia_National.csv"
@@ -138,6 +139,7 @@ COL_IND_ELEC_KWH = "ind_elec_kWh"
 COL_IND_OIL_TJ = "ind_diesel_TJ"
 COL_IND_TOTAL_TJ = "ind_total_energy_TJ"
 COL_IND_COPPER_ELEC_TJ = "copper_elec_TJ"
+COL_IND_ELEC_SCALED_TJ = "ind_elec_scaled_TJ"
 
 INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
 INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
@@ -190,6 +192,9 @@ DHS_SURVEY_HH_old_to_new_names = {
     "Microwave": "Microwave",
 }
 
+APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use.csv'
+TIER = np.array([0, 0, 0, 1, 2, 2, 3, 4])
+
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
 # -----------------------------------------------------------------------------
@@ -219,7 +224,7 @@ LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest t
 LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
-DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWH'
+DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
 DHS_MAKE_FIGURE = True
 DHS_RECALCULATE_ENERGIES = True
 DHS_SIMULATE_CELL_GROUPS = True
@@ -241,13 +246,3 @@ SERVICES_WEIGHT_EMPLOYEES = 1.0 # gamma
 # Plotting parameters
 MAP_DEFAULT_CMAP = "Reds"
 MAP_LOG_NORM_VMIN = 1e-6
-
-
-# -----------------------------------------------------------------------------
-# RESULTS FILES NAME
-# -----------------------------------------------------------------------------
-RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
-SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
-BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{COUNTRY}.gpkg'
-INDUSTRY_GPKG_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.gpkg'
-TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_consumption_{COUNTRY}.gpkg'

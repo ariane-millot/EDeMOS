@@ -1,13 +1,18 @@
 # Main configuration dispatcher
 # This file is responsible for loading the correct country-specific configuration.
+import importlib
 
 # Select the active country by changing the string value below.
 ACTIVE_COUNTRY = "Zambia"  # Or "Kenya"
 
 if ACTIVE_COUNTRY == "Kenya":
+    import config_Kenya
+    importlib.reload(config_Kenya)
     from config_Kenya import *
     print(f"INFO: Successfully loaded configuration for Kenya from config.py.")
 elif ACTIVE_COUNTRY == "Zambia":
+    import config_Zambia
+    importlib.reload(config_Zambia)
     from config_Zambia import *
     print(f"INFO: Successfully loaded configuration for Zambia from config.py.")
 else:
@@ -105,3 +110,12 @@ COL_BUI_ELEC_KWH_FINAL = 'bui_elec_kWh_final'
 # -----------------------------------------------------------------------------
 
 COL_TOTAL_ELEC_KWH = 'total_elec_kWh'
+
+# -----------------------------------------------------------------------------
+# RESULTS FILES NAME
+# -----------------------------------------------------------------------------
+RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{ACTIVE_COUNTRY}.csv'
+SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{ACTIVE_COUNTRY}.csv'
+BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{ACTIVE_COUNTRY}.gpkg'
+INDUSTRY_GPKG_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{ACTIVE_COUNTRY}.gpkg'
+TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_consumption_{ACTIVE_COUNTRY}.gpkg'

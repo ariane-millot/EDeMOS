@@ -1,5 +1,6 @@
 from pyproj import CRS
 from pathlib import Path
+import numpy as np
 
 ROOT_DIR = Path( __file__ ).parent.absolute()
 
@@ -99,11 +100,11 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = GRID_PATH / COUNTRY / "Transmission lines 132kV" / "132kV.shp"
-HV_LINES_SHP = GRID_PATH / COUNTRY /"Transmission lines 220kV" / "220kV.shp"
+MV_LINES_SHP = GRID_PATH / "Transmission lines 132kV" / "132kV.shp"
+HV_LINES_SHP = GRID_PATH /"Transmission lines 220kV" / "220kV.shp"
 
 # Census data files
-# The file should contain the following data, region, HH urban, rural, total, size of HH urban/rural
+# The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
 PROVINCE_DATA_AVAILABLE = True
 CENSUS_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY /"Census_KEN.csv"
 CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_KEN_National.csv"
@@ -138,6 +139,7 @@ COL_IND_ELEC_KWH = "ind_elec_kWh"
 COL_IND_OIL_TJ = "ind_diesel_TJ"
 COL_IND_TOTAL_TJ = "ind_total_energy_TJ"
 COL_IND_COPPER_ELEC_TJ = "copper_elec_TJ"
+COL_IND_ELEC_SCALED_TJ = "ind_elec_scaled_TJ"
 
 INDUSTRY_OUTPUT_DIR = ROOT_DIR / "Industry/Outputs"
 INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
@@ -145,8 +147,8 @@ INDUSTRY_OUTPUT_DIR.mkdir(exist_ok=True)
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
 # -----------------------------------------------------------------------------
-DHS_HH_SURVEY_FILE = 'KEHR8CFL'
-DHS_SERVICES_SURVEY_FILE = 'KEIR8CFL'
+DHS_HH_SURVEY_FILE = 'KEHR8CDT/KEHR8CFL'
+DHS_SERVICES_SURVEY_FILE = 'KEIR8CDT/KEIR8CFL'
 
 # Households labels
 # Choose the labels to be selected from the .do file
@@ -162,18 +164,24 @@ DHS_SERVICES_SURVEY_FILE = 'KEIR8CFL'
 #label variable hv209       "Has refrigerator"
 #label variable hv243a      "Has mobile telephone"
 #label variable hv243e      "Has a computer"
-# label variable sh121f   "Access to Internet"
-# label variable sh121j   "Washing machine"
-# label variable sh121k   "Air conditioner"
-# label variable sh121l   "Generator"
-# label variable sh121m   "Microwave"
+# label variable sh132n   "Household has a Microwave oven"
+# label variable sh132o   "Household has a DVD player"
+# label variable sh132p   "Household has a Cassette or CD player"
 #label variable hv270       "Wealth index combined"
 #label variable hv270a      "Wealth index for urban/rural"
 #label variable hv271       "Wealth index factor score combined (5 decimals)"
 #label variable hv271a      "Wealth index factor score for urban/rural (5 decimals)"
+# label variable hv201    "Source of drinking water"
+# label variable hv205    "Type of toilet facility"
+# label variable hv211    "Has motorcycle/scooter"
+# label variable hv212    "Has car/truck"
+# label variable hv223    "Type of cooking fuel"
+# Warning: Kenya has no washing machine and no air conditioner labels
 labels_hh = ['hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
-             'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m',
-             'hv270', 'hv270a', 'hv271', 'hv271a']
+             'hv243e', 'sh132n', 'sh132o', 'sh132p',
+             'hv270', 'hv270a', 'hv271', 'hv271a',
+             'hv201', 'hv205', 'hv211', 'hv212', 'hv223',
+             ]
 
 # Define the columns we want to change in the DHS data and what their new names will be.
 DHS_SURVEY_HH_old_to_new_names = {
@@ -188,7 +196,13 @@ DHS_SURVEY_HH_old_to_new_names = {
     "Air conditioner": "Air conditioner",
     "Generator": "Generator",
     "Microwave": "Microwave",
+    "Household has a Microwave oven":  "Microwave",
+    "Household has a DVD player":  "DVD player",
+    "Household has a Cassette or CD player": "CD player",
 }
+
+APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
+TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # modified: Kenya has no washing machine and no air conditioner labels
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -219,11 +233,11 @@ LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest t
 LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
-DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWH'
+DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
 DHS_MAKE_FIGURE = True
 DHS_RECALCULATE_ENERGIES = True
 DHS_SIMULATE_CELL_GROUPS = True
-DHS_RECALCULATE_ENERGY_PERHH = False
+DHS_RECALCULATE_ENERGY_PERHH = True
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
 
@@ -241,13 +255,3 @@ SERVICES_WEIGHT_EMPLOYEES = 1.0 # gamma
 # Plotting parameters
 MAP_DEFAULT_CMAP = "Reds"
 MAP_LOG_NORM_VMIN = 1e-6
-
-
-# -----------------------------------------------------------------------------
-# RESULTS FILES NAME
-# -----------------------------------------------------------------------------
-RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}.csv'
-SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{COUNTRY}.csv'
-BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{COUNTRY}.gpkg'
-INDUSTRY_GPKG_FILE = INDUSTRY_OUTPUT_DIR / f'ind_energy_map_{COUNTRY}.gpkg'
-TOTAL_ELECTRICITY_GPKG_FILE = OUTPUT_DIR / f'total_electricity_consumption_{COUNTRY}.gpkg'
