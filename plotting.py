@@ -18,7 +18,17 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         return
 
     grid_display = grid_gdf.copy()
-    grid_display[col_to_plot] = grid_display[col_to_plot] / 10**3 # kWh to MWh for display
+
+    col_lower = col_to_plot.lower()
+    if 'gwh' in col_lower:
+        unit_label = 'GWh'
+    elif 'kwh' in col_lower:
+        grid_display[col_to_plot] = grid_display[col_to_plot] / 10**3 # kWh to MWh for display
+        unit_label = 'MWh'
+        max_value = 1e6
+        min_value = 1e-3
+    else:
+        print(f"Warning: Could not detect a known unit (kWh, MWh, GWh) in column name '{col_to_plot}'. Plotting raw values.")
 
     fig, ax = plt.subplots(figsize=fig_size)
     ax.set_xlabel('Longitude (°)')
@@ -35,7 +45,7 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
     grid_display.sort_values(col_to_plot, ascending=True).plot(
         ax=ax, column=col_to_plot, cmap="Reds", legend=True, alpha=0.9,
         norm=colors.LogNorm(vmin=v_min, vmax=v_max),
-        legend_kwds={"label": sector_name + " Consumption (MWh per cell)"})
+        legend_kwds={"label": sector_name + " Consumption (" + unit_label + " per cell)"})
 
     if admin_gdf_param is not None: admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='brown', facecolor='None', alpha=0.6)
     if region_gdf_param is not None: region_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='brown', facecolor='None', alpha=0.2)
@@ -45,7 +55,13 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         lines_gdf.plot(ax=ax, edgecolor='purple', color='purple', alpha=0.4)
 
     ax.set_aspect('equal', 'box')
-    ax.set_title(f'{sector_name} Electricity Consumption in {app_config.AREA_OF_INTEREST} ({col_to_plot}, MWh)')
+    plt.rcParams.update({'font.size': 12})
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    if app_config.AREA_OF_INTEREST == 'COUNTRY':
+        region_title = app_config.COUNTRY
+    else:
+        region_title = app_config.AREA_OF_INTEREST
+    ax.set_title(f'{sector_name} Electricity Consumption in {region_title} ({unit_label})')
 
     # Scalebar
     points = gpd.GeoSeries([Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=app_config.CRS_WGS84)  # Geographic WGS 84 - degrees
