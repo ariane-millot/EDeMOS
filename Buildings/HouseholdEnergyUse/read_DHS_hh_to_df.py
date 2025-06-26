@@ -13,14 +13,15 @@ import pandas as pd
 # Check if we are running the notebook directly, if so move workspace to parent dir
 import sys
 import os
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'EDeMOS':
+startdir = os.getcwd()
+currentdir = os.path.abspath(startdir)
+while os.path.basename(currentdir) != 'EDeMOS':
   sys.path.insert(0, os.path.dirname(currentdir))
   os.chdir('..')
-  print(f'Move to {os.getcwd()}')
+  currentdir = os.path.abspath(os.getcwd())
+print(f'Moved to {currentdir}')
 
 import config
-
 
 # Choose the file
 filepath = config.DHS_FOLDER / f'{config.DHS_HH_SURVEY_FILE}.DTA'
@@ -73,3 +74,8 @@ df_hh = df_hh.rename(columns=old_to_new_names)
 print(df_hh.head())
 # Write the data for useful columns only in .csv format
 df_hh.to_csv(config.DHS_FOLDER / config.DHS_HOUSEHOLD_DATA_CSV)
+
+# Check if we moved workspace to parent dir, if so revert to original directory
+if currentdir != os.path.abspath(startdir):
+    os.chdir(startdir)
+    print(f'Moved back to {startdir}')
