@@ -76,11 +76,14 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
     # Define rules here. The code will process them from highest tier to lowest.
     # A household will only be assigned the first (highest-tier) rule it matches.
     override_rules = [
-        {'column': 'Source of drinking water', 'value': 'yes', 'tier': 3},
-        {'column': 'Type of toilet facility', 'value': 'flush', 'tier': 3},
-        {'column': 'Has motorcycle/scooter', 'value': 'yes', 'tier': 4},
+        {'column': 'Source of drinking water', 'value': 'bottled water', 'tier': 4},
+        # {'column': 'Source of drinking water', 'value': 'piped to yard/plot', 'tier': 3},
+        {'column': 'Source of drinking water', 'value': 'piped into dwelling', 'tier': 4},
+        {'column': 'Type of toilet facility', 'value': 'flush to septic tank', 'tier': 3},
+        {'column': 'Type of toilet facility', 'value': 'flush to piped sewer system', 'tier': 3},
+        {'column': 'Has motorcycle/scooter', 'value': 'yes', 'tier': 3},
         {'column': 'Has car/truck', 'value': 'yes', 'tier': 5},
-        {'column': 'Type of cooking fuel', 'value': 'electricity', 'tier': 5},
+        # {'column': 'Type of cooking fuel', 'value': 'electricity', 'tier': 5},
 
     ]
 
@@ -88,9 +91,6 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
 
     # Sort rules by tier in descending order to ensure priority
     sorted_rules = sorted(override_rules, key=lambda r: r['tier'], reverse=True)
-
-    # Keep track of households that have already been assigned a tier by an override rule
-    overridden_households = np.zeros(Nh, dtype=bool)
 
     # Check if rule columns exist in the dataframe
     for rule in sorted_rules:
@@ -104,30 +104,32 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
             print(f"Warning: Tier {rule['tier']} is invalid. Skipping rule.")
             continue
 
-        # Identify households that match the current rule AND have not been overridden yet
-        rule_matches = (data[rule['column']] == rule['value']).values
-        households_to_update = rule_matches & ~overridden_households
-
-        if np.any(households_to_update):
+        # Identify households that match the current rule's condition
+        rule_matches_mask = (data[rule['column']] == rule['value']).to_numpy(bool)
+        households_to_update_mask = ( rule_matches_mask & (tier_index > max_tier_per_hh) & #only upgrade
+            has_electricity # Ensure we only upgrade electrified households to a non-zero tier
+        )
+        if np.any(households_to_update_mask):
             # For the selected households, get their appliance ownership
-            update_appliance_use = appliance_use[households_to_update, :]
+            update_appliance_use = appliance_use[households_to_update_mask, :]
 
             # Recalculate their energy use using the fixed tier's consumption values
             new_energy = update_appliance_use @ energy_cons[:, tier_index]
 
             # Overwrite their energy use in the main array
-            energy_use[households_to_update] = new_energy
+            energy_use[households_to_update_mask] = new_energy
 
-            # Mark these households as overridden so they won't be changed by a lower-tier rule
-            overridden_households |= households_to_update
+            # Update tier
+            max_tier_per_hh[households_to_update_mask] = tier_index
 
-            print(f"Updated {np.sum(households_to_update)} households to Tier {rule['tier']} based on rule: '{rule['column']}' is '{rule['value']}'")
+            print(f"Updated {np.sum(households_to_update_mask)} households to Tier {rule['tier']} based on rule: '{rule['column']}' is '{rule['value']}'")
 
 
     # Scale energy use by household size
     energy_use = energy_use*(household_size/nominal_household_size)**elas
 
     # Write or overwrite column in data file with estimated energy use values
+    data['tiers'] = max_tier_per_hh
     data[config.DHS_ELEC_KWH_ASSESSED_SURVEY] = energy_use
     data.to_csv(config.DHS_HOUSEHOLD_DATA_CSV, index=None)
     print('Written energy use estimates to', config.DHS_HOUSEHOLD_DATA_CSV)
