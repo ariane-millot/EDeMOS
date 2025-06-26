@@ -211,7 +211,7 @@ def load_un_stats(app_config):
         res_elec_tj_value = res_elec_tj_value.iloc[0]
     res_elec_tj_value = pd.to_numeric(res_elec_tj_value)
     total_residential_elec_GWh = res_elec_tj_value / 3.6
-    print(f"Total Residential Energy (UN Stats): {total_residential_elec_GWh:.0f} GWh")
+    print(f"Total Residential electricity (UN Stats): {total_residential_elec_GWh:.0f} GWh")
 
     # Services electricity
     ser_elec_tj_value = eb.loc[
@@ -229,7 +229,7 @@ def load_un_stats(app_config):
         ser_elec_tj_value = ser_elec_tj_value.iloc[0]
     ser_elec_tj_value = pd.to_numeric(ser_elec_tj_value)
     total_services_elec_GWh = ser_elec_tj_value / 3.6
-    print(f"Total Services Energy (UN Stats): {total_services_elec_GWh:.0f} GWh")
+    print(f"Total Services electricity (UN Stats): {total_services_elec_GWh:.0f} GWh")
 
     return total_residential_elec_GWh, total_services_elec_GWh
 
