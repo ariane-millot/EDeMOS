@@ -134,6 +134,7 @@ COL_TOTAL_ELEC_KWH = 'total_elec_kWh'
 # -----------------------------------------------------------------------------
 # RESULTS FILES NAME
 # -----------------------------------------------------------------------------
+RESIDENTIAL_TEMP_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{ACTIVE_COUNTRY}.gpkg'
 RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{ACTIVE_COUNTRY}.csv'
 SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{ACTIVE_COUNTRY}.csv'
 BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{ACTIVE_COUNTRY}.gpkg'
