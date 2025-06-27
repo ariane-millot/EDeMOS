@@ -117,7 +117,7 @@ hexagons['id'] = range(1, len(hexagons)+1)
 
 # Export dataframe to csv or gpkg
 #hexagons.to_csv(out_path + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
-hexagons.to_file(config.OUTPUT_DIR / f'h3_grid_at_hex_{size}.shp', index=False)
+# hexagons.to_file(config.OUTPUT_DIR / f'h3_grid_at_hex_{size}.shp', index=False)
 hexagons.to_file(config.OUTPUT_DIR / config.H3_GRID_HEX_SHP, index=False) # file used in the other scripts
 # hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
 # admin_gdf.to_file(config.OUTPUT_DIR / f'area_gdf.gpkg', index=False)
