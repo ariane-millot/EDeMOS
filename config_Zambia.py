@@ -119,9 +119,16 @@ DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 #label variable hv270a      "Wealth index for urban/rural"
 #label variable hv271       "Wealth index factor score combined (5 decimals)"
 #label variable hv271a      "Wealth index factor score for urban/rural (5 decimals)"
+# label variable hv201    "Source of drinking water"
+# label variable hv205    "Type of toilet facility"
+# label variable hv211    "Has motorcycle/scooter"
+# label variable hv212    "Has car/truck"
+# label variable hv226    "Type of cooking fuel"
 labels_hh = ['hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
              'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m',
-             'hv270', 'hv270a', 'hv271', 'hv271a']
+             'hv270', 'hv270a', 'hv271', 'hv271a',
+             'hv201', 'hv205', 'hv211', 'hv212', 'hv226',
+             ]
 
 # Define the columns we want to change in the DHS data and what their new names will be.
 DHS_SURVEY_HH_old_to_new_names = {
