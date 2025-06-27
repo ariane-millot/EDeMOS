@@ -10,7 +10,7 @@ conda env create -f environment.yml
 ## Workflow steps
 1. Download the different data sets for the country and put in relevant folders (see config file for location)
 2. Adjust file names if needed config file
-3. Run the rwi rasterize script
+3. Run [rasterize_rwi.py](Buildings/rasterize_rwi.py)
 4. Run the DHS data to df script for households and services (select appropriate labels in config file)
 5. Donwload and adjust census data to have HH urban, rural, total and size of HH
 6. Run GeoDem.py

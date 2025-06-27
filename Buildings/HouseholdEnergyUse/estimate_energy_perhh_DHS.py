@@ -1,22 +1,9 @@
 from pandas import read_csv
 import numpy as np
-
-# Check if we are running the notebook directly, if so move workspace to parent dir
 import sys
-import os
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'EDeMOS':
-  sys.path.insert(0, os.path.dirname(currentdir))
-  os.chdir('..')
-  print(f'Move to {os.getcwd()}')
-
-import config
-
-dhs_data_folder = config.DHS_FOLDER
-data_folder = config.RESIDENTIAL_DATA_PATH
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
+def compute_energy_perhh_DHS(elas=0.4,nominal_household_size=4):
 
     # Read-in the data on appliances and energy tiers
     data_apps = read_csv(data_folder / config.APPLIANCE_ELECTRICITY_CONS, header=1)
@@ -133,5 +120,14 @@ def compute_energy_perhh_DHS(elas=0.4, nominal_household_size=4):
     print('Written energy use estimates to', config.DHS_HOUSEHOLD_DATA_CSV)
 
 
+# Check if we are running the notebook directly, if so import config
 if __name__ == "__main__":
+
+    sys.path.insert(1, '../../')
+
+    import config
+
+    dhs_data_folder = config.DHS_FOLDER
+    data_folder = config.RESIDENTIAL_DATA_PATH
+
     compute_energy_perhh_DHS()

@@ -8,16 +8,6 @@ from scipy.stats import norm
 from scipy.interpolate import griddata
 from scipy.optimize import curve_fit
 
-# Check if we are running the notebook directly, if so move workspace to parent dir
-import sys
-import os
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'EDeMOS':
-  sys.path.insert(0, os.path.dirname(currentdir))
-  os.chdir('..')
-  print(f'Move to {os.getcwd()}')
-
-import config
 
 # Define probability distribution for selection of simulated subgroups of households from survey
 def selection_window(x, x0, s, c):
@@ -35,6 +25,11 @@ def logistic(x, a, b, x0):
 
 np.random.seed(42)
 
+# Check if we are running the notebook directly, if so import config
+if __name__ == "__main__":
+    import sys
+    sys.path.insert(1, '../../')
+    import config
 
 def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS_MAKE_FIGURE,
                                       recalculate_energies = config.DHS_RECALCULATE_ENERGIES,
@@ -292,6 +287,7 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
 
 
 if __name__ == "__main__":
+
     infile = config.RESIDENTIAL_GRID_FILE  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
     grid = read_csv(infile)
 
