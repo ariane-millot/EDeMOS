@@ -15,20 +15,6 @@ AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copp
 YEAR = 2019 # year of analysis
 
 # -----------------------------------------------------------------------------
-# PATHS
-# -----------------------------------------------------------------------------
-
-DATA_FOLDER = ROOT_DIR / "Data"
-# Input paths
-ADMIN_PATH = DATA_FOLDER / "admin"
-ADMIN_GPKG = f"gadm41_{ISO_CODE}.gpkg"
-
-# Output paths
-OUTPUT_DIR = ROOT_DIR / "Outputs"
-# Ensure all folders for output files exist
-OUTPUT_DIR.mkdir(exist_ok=True)
-
-# -----------------------------------------------------------------------------
 # COORDINATE REFERENCE SYSTEMS
 # -----------------------------------------------------------------------------
 CRS_WGS84 = CRS("EPSG:4326") # Original WGS84 coordinate system
@@ -42,32 +28,12 @@ TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S)
 # hexagon size
 HEX_SIZE = 6 ## resolution info here https://h3geo.org/docs/core-library/restable
 
-# HEXAGON FILE NAME
-H3_GRID_HEX_SHP = f"h3_grid_at_hex_{COUNTRY}_size{HEX_SIZE}.shp" # Located in current OUTPUT_DIR
-
 # BUFFER DISTANCE in meters.
 buffer_distance_meters = 1000 # This should be larger than half the diagonal of a hexagon
 
-
 # -----------------------------------------------------------------------------
-# RESIDENTIAL PARAMETERS
+# RESIDENTIAL FILES
 # -----------------------------------------------------------------------------
-
-# File paths
-
-# Input paths
-GRID_PATH = DATA_FOLDER / "Grid" / COUNTRY # For MV/HV lines
-ENERGY_BALANCE_PATH = DATA_FOLDER / "EnergyBalance"
-RESIDENTIAL_DATA_PATH = ROOT_DIR / "Buildings" / "Data"
-WORLDPOP_PATH = RESIDENTIAL_DATA_PATH / "WorldPop"
-LIGHTING_PATH = RESIDENTIAL_DATA_PATH / "Lighting"
-RWI_PATH = RESIDENTIAL_DATA_PATH / "WealthIndex"
-FALCHETTA_PATH = RESIDENTIAL_DATA_PATH / "Falchetta_ElecAccess"
-# GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP")
-
-# Output paths
-RESIDENTIAL_OUTPUT_DIR = ROOT_DIR / "Buildings" / "Outputs" # As used in building_demand.py for dataHH_region.csv
-FIGURES_DHS_FOLDER = ROOT_DIR / "Buildings" / "Figures" # As used in estimate_energy_rwi_link_national_new.py
 
 # WorldPop files
 # Link: https://apps.worldpop.org/peanutButter/
@@ -100,14 +66,14 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = GRID_PATH / "Transmission lines 132kV" / "132kV.shp"
-HV_LINES_SHP = GRID_PATH /"Transmission lines 220kV" / "220kV.shp"
+MV_LINES_SHP = "Transmission lines 132kV/132kV.shp"
+HV_LINES_SHP = "Transmission lines 220kV/220kV.shp"
 
 # Census data files
 # The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
 PROVINCE_DATA_AVAILABLE = True
-CENSUS_PROVINCE_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY /"Census_KEN.csv"
-CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_KEN_National.csv"
+CENSUS_PROVINCE_CSV = Path("Census") / COUNTRY /"Census_KEN.csv"
+CENSUS_NATIONAL_CSV = Path("Census") / COUNTRY / "Census_KEN_National.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
 # 1. Run read_DHS_hh_to_df.py in HouseholdEnergyUse folder to generate the household_data.csv
@@ -116,16 +82,13 @@ CENSUS_NATIONAL_CSV = RESIDENTIAL_DATA_PATH / "Census" / COUNTRY / "Census_KEN_N
 # 1 Download the Individual Recode  XXXXDT.ZIP to generate employee_survey_(men/women).csv
 # 2 Run: read_DHS_services_to_df.py in HouseholdEnergyUse folder
 # 3 Download or add the 'pop15-49_share_{COUNTRY}.csv' file in the DHS folder
+
+RESIDENTIAL_DATA_PATH = ROOT_DIR / "Buildings" / "Data"
 DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS" / COUNTRY
 DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / f'household_data_{COUNTRY}.csv'
 DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / f'employee_survey_women_{COUNTRY}.csv'
 DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / f'employee_survey_men_{COUNTRY}.csv'
 DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / f'pop15-49_share_{COUNTRY}.csv'
-
-# Ensure all folders for output files exist
-RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
-FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
-
 
 # -----------------------------------------------------------------------------
 # DHS FILES PARAMETERS
@@ -234,7 +197,3 @@ SERVICES_WEIGHT_GDP = 0.0 # alpha
 SERVICES_WEIGHT_BUILDINGS = 0.0 # beta
 SERVICES_WEIGHT_EMPLOYEES = 1.0 # gamma
 # THRESHOLD_ACCESS_SERVICES = 0.1 # from original script, check if used with new structure
-
-# Plotting parameters
-MAP_DEFAULT_CMAP = "Reds"
-MAP_LOG_NORM_VMIN = 1e-6

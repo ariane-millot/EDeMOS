@@ -3,7 +3,7 @@
 import importlib
 
 # Select the active country by changing the string value below.
-ACTIVE_COUNTRY = "Zambia"  # Or "Kenya"
+ACTIVE_COUNTRY = "Kenya"  # Or "Kenya"
 
 if ACTIVE_COUNTRY == "Kenya":
     import config_Kenya
@@ -24,6 +24,44 @@ else:
 
 
 # -----------------------------------------------------------------------------
+# PATHS
+# -----------------------------------------------------------------------------
+
+DATA_FOLDER = ROOT_DIR / "Data"
+# Input paths
+ADMIN_PATH = DATA_FOLDER / "admin"
+ADMIN_GPKG = f"gadm41_{ISO_CODE}.gpkg"
+
+# Output paths
+OUTPUT_DIR = ROOT_DIR / "Outputs"
+# Ensure all folders for output files exist
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+# -----------------------------------------------------------------------------
+# RESIDENTIAL PATHS
+# -----------------------------------------------------------------------------
+
+# File paths
+
+# Input paths
+GRID_PATH = DATA_FOLDER / "Grid" / COUNTRY # For MV/HV lines
+ENERGY_BALANCE_PATH = DATA_FOLDER / "EnergyBalance"
+WORLDPOP_PATH = RESIDENTIAL_DATA_PATH / "WorldPop"
+LIGHTING_PATH = RESIDENTIAL_DATA_PATH / "Lighting"
+RWI_PATH = RESIDENTIAL_DATA_PATH / "WealthIndex"
+FALCHETTA_PATH = RESIDENTIAL_DATA_PATH / "Falchetta_ElecAccess"
+# GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP")
+DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS" / COUNTRY
+
+# Output paths
+RESIDENTIAL_OUTPUT_DIR = ROOT_DIR / "Buildings" / "Outputs" # As used in building_demand.py for dataHH_region.csv
+FIGURES_DHS_FOLDER = ROOT_DIR / "Buildings" / "Figures" # As used in estimate_energy_rwi_link_national_new.py
+
+# Ensure all folders for output files exist
+RESIDENTIAL_OUTPUT_DIR.mkdir(exist_ok=True)
+FIGURES_DHS_FOLDER.mkdir(exist_ok=True)
+
+# -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
 # -----------------------------------------------------------------------------
 
@@ -39,6 +77,9 @@ UN_INDUSTRY_MINING = "B33_1214e"
 # -----------------------------------------------------------------------------
 # PARAMETERS - ADMIN
 # -----------------------------------------------------------------------------
+
+# HEXAGON FILE NAME
+H3_GRID_HEX_SHP = f"h3_grid_at_hex_{COUNTRY}_size{HEX_SIZE}.shp" # Located in current OUTPUT_DIR
 
 # Admin boundaries
 ADMIN_LAYER_REGION = "ADM_ADM_1"
@@ -134,7 +175,7 @@ COL_TOTAL_ELEC_KWH = 'total_elec_kWh'
 # -----------------------------------------------------------------------------
 # RESULTS FILES NAME
 # -----------------------------------------------------------------------------
-RESIDENTIAL_TEMP_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{ACTIVE_COUNTRY}.gpkg'
+RESIDENTIAL_TEMP_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{COUNTRY}_hexsize{HEX_SIZE}.gpkg'
 RESIDENTIAL_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_res_{ACTIVE_COUNTRY}.csv'
 SERVICES_GRID_FILE = RESIDENTIAL_OUTPUT_DIR / f'data_ser_{ACTIVE_COUNTRY}.csv'
 BUILDINGS_GPKG_FILE = RESIDENTIAL_OUTPUT_DIR / f'buildings_map_{ACTIVE_COUNTRY}.gpkg'
