@@ -47,8 +47,8 @@ def determine_electrification_status(grid_gdf, app_config, admin_gdf):
     print("Determining electrification status...")
 
     # Load MV and HV lines
-    mv_lines_gdf = gpd.read_file(app_config.MV_LINES_SHP)
-    hv_lines_gdf = gpd.read_file(app_config.HV_LINES_SHP)
+    mv_lines_gdf = gpd.read_file(app_config.GRID_PATH / app_config.MV_LINES_SHP)
+    hv_lines_gdf = gpd.read_file(app_config.GRID_PATH /app_config.HV_LINES_SHP)
     # print(f"MV lines loaded: {mv_lines_gdf.shape}, HV lines loaded: {hv_lines_gdf.shape}")
 
     print("--- Initial Data Sanity Check ---")
