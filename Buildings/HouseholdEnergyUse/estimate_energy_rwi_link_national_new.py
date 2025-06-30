@@ -26,10 +26,10 @@ def logistic(x, a, b, x0):
 np.random.seed(42)
 
 # Check if we are running the notebook directly, if so import config
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(1, '../../')
-    import config
+# if __name__ == "__main__":
+import sys
+sys.path.insert(1, '../../')
+import config
 
 def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS_MAKE_FIGURE,
                                       recalculate_energies = config.DHS_RECALCULATE_ENERGIES,
@@ -49,7 +49,7 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
 
     if recalculate_energy_perhh:
         from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_DHS
-        compute_energy_perhh_DHS()  # Run the script to assess energy consumption of households in the DHS dataset
+        compute_energy_perhh_DHS(app_config)  # Run the script to assess energy consumption of households in the DHS dataset
 
     # Read file containing data from DHS survey of households
     infile_DHS = app_config.DHS_HOUSEHOLD_DATA_CSV
