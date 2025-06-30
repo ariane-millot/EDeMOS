@@ -88,6 +88,7 @@ DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS" / COUNTRY
 DHS_HOUSEHOLD_DATA_CSV = DHS_FOLDER / f'household_data_{COUNTRY}.csv'
 DHS_EMPLOYEE_WOMEN_CSV = DHS_FOLDER / f'employee_survey_women_{COUNTRY}.csv'
 DHS_EMPLOYEE_MEN_CSV = DHS_FOLDER / f'employee_survey_men_{COUNTRY}.csv'
+# Extract relevant information from Household population by age, sex and residence from DHS report
 DHS_WORKING_POP_SHARE_CSV = DHS_FOLDER / f'pop15-49_share_{COUNTRY}.csv'
 
 # -----------------------------------------------------------------------------
