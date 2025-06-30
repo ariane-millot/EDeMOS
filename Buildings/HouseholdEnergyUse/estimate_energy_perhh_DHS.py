@@ -2,11 +2,12 @@ from pandas import read_csv
 import numpy as np
 import sys
 
+
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(elas=0.4,nominal_household_size=4):
+def compute_energy_perhh_DHS(app_config, elas=0.4,nominal_household_size=4):
 
     # Read-in the data on appliances and energy tiers
-    data_apps = read_csv(data_folder / config.APPLIANCE_ELECTRICITY_CONS, header=1)
+    data_apps = read_csv(app_config.RESIDENTIAL_DATA_PATH / app_config.APPLIANCE_ELECTRICITY_CONS, header=1)
     # Identify columns that give appliance energy consumption
     cols = [c for c in data_apps.columns if "Tier" in c]
     # Read columns into 2-d array for appliance consumption
@@ -14,7 +15,7 @@ def compute_energy_perhh_DHS(elas=0.4,nominal_household_size=4):
     appliance = np.array(data_apps['Appliance'])  # Appliance names
 
     # Read-in the data from the survey of households
-    data = read_csv(config.DHS_HOUSEHOLD_DATA_CSV)
+    data = read_csv(app_config.DHS_HOUSEHOLD_DATA_CSV)
     Nh = data.shape[0]
     print('Read data on', Nh, 'survey households')
     # Read columns into 2d array on appliance usage
@@ -117,19 +118,13 @@ def compute_energy_perhh_DHS(elas=0.4,nominal_household_size=4):
 
     # Write or overwrite column in data file with estimated energy use values
     data['tiers'] = max_tier_per_hh
-    data[config.DHS_ELEC_KWH_ASSESSED_SURVEY] = energy_use
-    data.to_csv(config.DHS_HOUSEHOLD_DATA_CSV, index=None)
-    print('Written energy use estimates to', config.DHS_HOUSEHOLD_DATA_CSV)
+    data[app_config.DHS_ELEC_KWH_ASSESSED_SURVEY] = energy_use
+    data.to_csv(app_config.DHS_HOUSEHOLD_DATA_CSV, index=None)
+    print('Written energy use estimates to', app_config.DHS_HOUSEHOLD_DATA_CSV)
 
 
 # Check if we are running the notebook directly, if so import config
 if __name__ == "__main__":
-
     sys.path.insert(1, '../../')
-
     import config
-
-    dhs_data_folder = config.DHS_FOLDER
-    data_folder = config.RESIDENTIAL_DATA_PATH
-
-    compute_energy_perhh_DHS()
+    compute_energy_perhh_DHS(config)
