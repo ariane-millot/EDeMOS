@@ -32,6 +32,15 @@ In the census data file, the following colummns should be available: HH urban, r
 This is set in config_{Country}.py. HEX_SIZE=5 for testing, 6 for meaningful results, 7 for best results
 
 ### 6. Run [GeoDem.ipynb](GeoDem.ipynb)
+To run .ipynb file, you can use jupyter lab. In your anaconda prompt, navigate to your working folder. Activate the environment by running:
+```
+conda activate edemos_env
+```
+Then run 
+```
+conda jupyter lab
+```
+You can then access the different scripts and run [GeoDem.ipynb](GeoDem.ipynb)
 
 ## Data sets
 
