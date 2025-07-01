@@ -125,10 +125,17 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
     if not all(col in df_censusdata.columns for col in required_census_cols):
         raise KeyError(f"Missing one or more required columns in census data: {required_census_cols}")
 
-    # --- FIX START: The calculation logic is moved into a more robust helper function ---
-
     # Make a local copy to avoid SettingWithCopyWarning
     df_censusdata_local = df_censusdata.copy()
+
+    # Check for duplicate indices in the DHS employee data
+    if data_employee_women.index.duplicated().any() or data_employee_men.index.duplicated().any():
+        print("Warning: Duplicate indices found in DHS employee data!")
+
+    # Check for duplicate indices in the working population share data
+    if data_workingpop_share.index.duplicated().any():
+        print("Warning: Duplicate indices found in working population share data!")
+        print(data_workingpop_share)
 
     # Define a single, more robust helper function for calculating population
     def calculate_nb_gender(row, gender_type):
@@ -155,8 +162,6 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
     print("  Calculating number of men and women (15-49)...")
     grid_gdf['nb_women'] = grid_gdf.apply(calculate_nb_gender, args=('women',), axis=1)
     grid_gdf['nb_men'] = grid_gdf.apply(calculate_nb_gender, args=('men',), axis=1)
-
-    # --- FIX END ---
 
     # Calculate working women/men (This part was mostly correct)
     def calculate_working_gender(row, sex_col_name, employee_data_df, employee_share_col_name):
