@@ -7,7 +7,7 @@ import seaborn as sns
 from scipy.stats import norm
 from scipy.interpolate import griddata
 from scipy.optimize import curve_fit
-
+import sys
 
 # Define probability distribution for selection of simulated subgroups of households from survey
 def selection_window(x, x0, s, c):
@@ -25,27 +25,17 @@ def logistic(x, a, b, x0):
 
 np.random.seed(42)
 
-# Check if we are running the notebook directly, if so import config
-# if __name__ == "__main__":
-import sys
-sys.path.insert(1, '../../')
-import config
 
-def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS_MAKE_FIGURE,
-                                      recalculate_energies = config.DHS_RECALCULATE_ENERGIES,
-                                      simulate_cell_groups = config.DHS_SIMULATE_CELL_GROUPS,
-                                      recalculate_energy_perhh = config.DHS_RECALCULATE_ENERGY_PERHH):
+def estimate_energy_rwi_link_national(grid, app_config):
     np.random.seed(42)
 
     # To produce graphs of the simulated cell groups, set simulate_cell_groups = True
+    simulate_cell_groups = app_config.DHS_SIMULATE_CELL_GROUPS # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
     # To produce graphs showing the fitting function, set simulate_cell_groups = False and recalculate_energies = True
-
+    recalculate_energies = app_config.DHS_RECALCULATE_ENERGIES # If false will just use any existing value in grid data
+    recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
     figures_folder = app_config.FIGURES_DHS_FOLDER
-    # recalculate_energies = app_config.DHS_RECALCULATE_ENERGIES # If false will just use any existing value in grid data
-    # recalculate_energies = True
-    # simulate_cell_groups = app_config.DHS_SIMULATE_CELL_GROUPS # Setting to False will set cell energies by interpolation (only active if recalculate_energies = True)
-    # simulate_cell_groups = True
-    # recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
+    make_figure = app_config.DHS_MAKE_FIGURE
 
     if recalculate_energy_perhh:
         from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_DHS
@@ -287,7 +277,8 @@ def estimate_energy_rwi_link_national(grid, app_config, make_figure = config.DHS
 
 
 if __name__ == "__main__":
-
+    sys.path.insert(1, '../../')
+    import config
     infile = config.RESIDENTIAL_GRID_FILE  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
     grid = read_csv(infile)
 
