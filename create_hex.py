@@ -52,8 +52,11 @@ def add_neighbors(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 
     def get_neighbor_indices(h3_address):
-        # Get neighbors (including self)
-        neighbors_h3 = h3.k_ring(h3_address, 1)
+        # Get neighbors (including self) code for h3 v3.x
+        # neighbors_h3 = h3.k_ring(h3_address, 1)
+        # New, correct code for h3 v4.x
+        neighbors_h3 = h3.grid_disk(h3_address, 1)
+
         # Remove self
         neighbors_h3.remove(h3_address)
 
