@@ -15,3 +15,5 @@ Industry/Data/*
 !Industry/Data/mines/Mineral_Facilities_correctedInput.csv
 Industry/Outputs/*
 convert_crs.py
+.DS_Store
+**/.DS_Store
