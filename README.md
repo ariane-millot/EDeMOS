@@ -25,9 +25,12 @@ As required for the specific country (see below). Files need to be named and put
 - [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) 
 (select appropriate labels in config file)
 
-### 4. Adjust census data to have HH urban, rural, total and size of HH
+### 4. Adjust census data
+In the census data file, the following colummns should be available: HH urban, rural, total, size of HH (urban and rural) and share women
+
 ### 5. Set resolution
 This is set in config_{Country}.py. HEX_SIZE=5 for testing, 6 for meaningful results, 7 for best results
+
 ### 6. Run [GeoDem.ipynb](GeoDem.ipynb)
 
 ## Data sets
