@@ -1,4 +1,4 @@
-# EDeMOS (Electricity Demand Mapping from Open-Source data) __ZAMBIA__ case study
+# EDeMOS (Electricity Demand Mapping from Open-Source data)
 <pre>
 </pre>
 
@@ -16,22 +16,25 @@ conda activate edemos_env
 ```
 before running EDeMOS.
 
-### 2. Download data sets 
+### 2. Choose country
+Set the variable ACTIVE_COUNTRY in [config.py](config.py).
+
+### 3. Download data sets 
 As required for the specific country (see below). Files need to be named and put in folders to match the paths given in the [config.py](config.py) and config_{Country}.py
 
-### 3. Run data conversion scripts
+### 4. Run data conversion scripts
 - [rasterize_rwi.py](Buildings/rasterize_rwi.py) (This may take several minutes or more to run)
 - [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py)
 - [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) 
 (select appropriate labels in config file)
 
-### 4. Adjust census data
+### 5. Adjust census data
 In the census data file, the following colummns should be available: HH urban, rural, total, size of HH (urban and rural) and share women
 
-### 5. Set resolution
+### 6. Set resolution
 This is set in config_{Country}.py. HEX_SIZE=5 for testing, 6 for meaningful results, 7 for best results
 
-### 6. Run [GeoDem.ipynb](GeoDem.ipynb)
+### 7. Run [GeoDem.ipynb](GeoDem.ipynb)
 To run .ipynb file, you can use jupyter lab, to install it, run:
 ```
 pip install jupyterlab
