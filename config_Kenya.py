@@ -71,6 +71,7 @@ HV_LINES_SHP = "Transmission lines 220kV/220kV.shp"
 
 # Census data files
 # The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
+# Kenya: https://open.africa/dataset/2019-kenya-population-and-housing-census
 PROVINCE_DATA_AVAILABLE = True
 CENSUS_PROVINCE_CSV = Path("Census") / COUNTRY /"Census_KEN.csv"
 CENSUS_NATIONAL_CSV = Path("Census") / COUNTRY / "Census_KEN_National.csv"
