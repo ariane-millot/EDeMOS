@@ -158,9 +158,9 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     grid_gdf.rename(columns=actual_rename_map, inplace=True)
     print(f"Columns after renaming: {grid_gdf.columns}")
     print(grid_gdf.crs)
-    # Specific adjustments from original script
+    # Fill NaN values with tier 0
     if app_config.COL_TIERS_FALCHETTA_MEAN in grid_gdf.columns:
-        grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN] = grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN].round().astype(int)
+        grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN] = grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN].fillna(0).round().astype(int)
     print(grid_gdf.crs)
     # Fill NaN values: Add 0 values in HREA column when there is none
     if app_config.COL_HREA_MEAN in grid_gdf.columns:
