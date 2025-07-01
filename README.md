@@ -1,21 +1,36 @@
 # EDeMOS (Electricity Demand Mapping from Open-Source data) __ZAMBIA__ case study
 <pre>
 </pre>
-## Crete a new environment in Conda
 
-The attached _*.yml_ will allow you to create a new environment in Conda. The new environment has been tested and is working (there are no issues with libraries like gdal, h3, h3pandas, and others).  
-```
-conda env create -f environment.yml
-```
 ## Workflow steps
-1. Download all the necessary data sets for the country (see below) and put in relevant folders (see config file for location)
-2. Adjust file names if needed to match config file
-3. Run [rasterize_rwi.py](Buildings/rasterize_rwi.py)
-4. Run [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py) and [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) (select appropriate labels in config file)
-5. Download and adjust census data to have HH urban, rural, total and size of HH
-6. Run GeoDem.py
 
-## Useful data sets
+### 1. Crete a new environment in Conda
+
+The file [geodemand_env.yml](geodemand_env.yml) will allow you to create a new environment in Conda. Running EDeMOS from this environment should avoid any issues with libraries like gdal, h3, h3pandas, and others.  To create the environment, run:
+```
+conda env create -f geodemand_env.yml
+```
+You only need to do this the very first time. Thereafter you just need to run:
+```
+conda activate edemos_env
+```
+before running EDeMOS.
+
+### 2. Download data sets 
+As required for the specific country (see below). Files need to be named and put in folders to match the paths given in the [config.py](config.py) and config_{Country}.py
+
+### 3. Run data conversion scripts
+- [rasterize_rwi.py](Buildings/rasterize_rwi.py) (This may take several minutes or more to run)
+- [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py)
+- [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) 
+(select appropriate labels in config file)
+
+### 4. Adjust census data to have HH urban, rural, total and size of HH
+### 5. Set resolution
+This is set in config_{Country}.py. HEX_SIZE=5 for testing, 6 for meaningful results, 7 for best results
+### 6. Run [GeoDem.ipynb](GeoDem.ipynb)
+
+## Data sets
 
 1. Zambia Census 2022. [Zamstats, 2022](https://www.zamstats.gov.zm/census/).
 2. Demographic and Health Surveys (DHS). [DHS](https://dhsprogram.com/data/dataset/Kenya_Standard-DHS_2022.cfm)

@@ -21,21 +21,17 @@ import rasterio.mask
 from rasterio.warp import calculate_default_transform, reproject
 from rasterio.enums import Resampling
 import affine
-
+import os
 import importlib
 
 import matplotlib.pyplot as plt
 
-### Define directories and dataset names
-import sys
-import os
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'EDeMOS':
-  sys.path.insert(0, os.path.dirname(currentdir))
-  os.chdir('..')
-  print(f'Move to {os.getcwd()}')
+# Check if we are running the notebook directly, if so import config
+if __name__ == "__main__":
+    import sys
+    sys.path.insert(1, '../')
+    import config
 
-import config
 importlib.reload(config)
 
 out_path = config.RWI_PATH
@@ -109,7 +105,7 @@ rasterize_vector(rwi_gdf_proj, outFile, field=field, res=resolution)
 
 src = rasterio.open(out_path / out_raster_name)
 
-# getting extent from bounds fro proper vizualization
+# getting extent from bounds for proper vizualization
 src_extent = np.asarray(src.bounds)[[0,2,1,3]]
 
 plt.figure(figsize = (15,15))
