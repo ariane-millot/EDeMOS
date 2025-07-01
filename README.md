@@ -4,11 +4,11 @@
 
 ## Workflow steps
 
-### 1. Crete a new environment in Conda
+### 1. Create a new environment in Conda
 
-The file [geodemand_env.yml](geodemand_env.yml) will allow you to create a new environment in Conda. Running EDeMOS from this environment should avoid any issues with libraries like gdal, h3, h3pandas, and others.  To create the environment, run:
+The file [edemos_env.yml](edemos_env.yml) will allow you to create a new environment in Conda. Running EDeMOS from this environment should avoid any issues with libraries like gdal, h3, h3pandas, and others.  To create the environment, run:
 ```
-conda env create -f geodemand_env.yml
+conda env create -f edemos_env.yml
 ```
 You only need to do this the very first time. Thereafter you just need to run:
 ```
