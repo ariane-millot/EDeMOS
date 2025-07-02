@@ -199,22 +199,22 @@ def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
 
         # Warning if mismatch happen
         # To avoid division by zero, we calculate the denominator first
-        denominator_rural = app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * df_HH_buildings['urbanBuildings']
+        denominator_urban = app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * df_HH_buildings['urbanBuildings']
         # Initialize the column with zeros
         df_HH_buildings['shareUrbanResBui'] = 0.0
         # Identify rows where the denominator is non-zero
-        valid_mask_rural = denominator_rural != 0
+        valid_mask_urban = denominator_urban != 0
         # Calculate the share only for valid rows
-        df_HH_buildings.loc[valid_mask_rural, 'shareUrbanResBui'] = df_HH_buildings.loc[valid_mask_rural, 'HH_urban'] / denominator_rural[valid_mask_rural]
+        df_HH_buildings.loc[valid_mask_urban, 'shareUrbanResBui'] = df_HH_buildings.loc[valid_mask_urban, 'HH_urban'] / denominator_urban[valid_mask_urban]
 
         # --- Print data inconsistencies ---
-        invalid_mask = ~valid_mask_rural & (df_HH_buildings['HH_rural'] > 0)
+        invalid_mask = ~valid_mask_urban & (df_HH_buildings['HH_urban'] > 0)
         if invalid_mask.any():
-            lost_hh = df_HH_buildings.loc[invalid_mask, 'HH_rural'].sum()
+            lost_hh = df_HH_buildings.loc[invalid_mask, 'HH_urban'].sum()
             regions_affected = df_HH_buildings.loc[invalid_mask].index.tolist()
             print(
                 f"Data Inconsistency: {lost_hh:,.0f} urban households could not be allocated "
-                f"because no rural buildings were found in region(s): {regions_affected}. "
+                f"because no urban buildings were found in region(s): {regions_affected}. "
                 f"Their share is set to 0."
             )
 
