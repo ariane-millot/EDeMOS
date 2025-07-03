@@ -26,7 +26,8 @@ TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S)
 # -----------------------------------------------------------------------------
 
 # hexagon size
-HEX_SIZE = 6 ## resolution info here https://h3geo.org/docs/core-library/restable
+HEX_SIZE = 7 ## resolution info here https://h3geo.org/docs/core-library/restable
+# resolution 5 leads to some missing regions, error in the workflow
 
 # BUFFER DISTANCE in meters.
 buffer_distance_meters = 1000 # This should be larger than half the diagonal of a hexagon
