@@ -45,7 +45,7 @@ conda activate edemos_env
 ```
 Then run 
 ```
-conda jupyter lab
+jupyter lab
 ```
 You can then access the different scripts and run [GeoDem.ipynb](GeoDem.ipynb)
 
