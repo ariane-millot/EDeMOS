@@ -80,6 +80,7 @@ fig, ax = plt.subplots(figsize=(25, 15))
 # Convert the dataset to a coordinate
 hexagons.plot(ax=ax, edgecolor='brown', alpha=0.2)
 admin_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
+region_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
 ax.set_aspect('equal', 'box')
 # Add latitude and longitude labels
 ax.set_xlabel('Longitude (°)')
@@ -109,14 +110,16 @@ scalebar = ScaleBar(
 
 ax.add_artist(scalebar)
 
-plt.show()
+# plt.show()
 # Save plot as figure
 plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.png', bbox_inches='tight')
+plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.svg', format='svg', bbox_inches='tight')
+
 
 hexagons['id'] = range(1, len(hexagons)+1)
 
 # Export dataframe to csv or gpkg
-#hexagons.to_csv(out_path + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
+#hexagons.to_csv(config.OUTPUT_DIR  + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
 # hexagons.to_file(config.OUTPUT_DIR / f'h3_grid_at_hex_{size}.shp', index=False)
 hexagons.to_file(config.OUTPUT_DIR / config.H3_GRID_HEX_SHP, index=False) # file used in the other scripts
 # hexagons.to_file(config.OUTPUT_DIR / "hex.geojson")
