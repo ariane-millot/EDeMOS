@@ -3,7 +3,7 @@
 import importlib
 
 # Select the active country by changing the string value below.
-ACTIVE_COUNTRY = "Kenya"  # Or "Kenya"
+ACTIVE_COUNTRY = "Zambia"  # Or "Kenya" "Zambia":
 
 if ACTIVE_COUNTRY == "Kenya":
     import config_Kenya
@@ -49,6 +49,7 @@ ENERGY_BALANCE_PATH = DATA_FOLDER / "EnergyBalance"
 WORLDPOP_PATH = RESIDENTIAL_DATA_PATH / "WorldPop"
 LIGHTING_PATH = RESIDENTIAL_DATA_PATH / "Lighting"
 RWI_PATH = RESIDENTIAL_DATA_PATH / "WealthIndex"
+POP_PATH = RESIDENTIAL_DATA_PATH / "HRSL"
 FALCHETTA_PATH = RESIDENTIAL_DATA_PATH / "Falchetta_ElecAccess"
 # GDP_PATH = RESIDENTIAL_DATA_PATH / "GDP")
 DHS_FOLDER = RESIDENTIAL_DATA_PATH / "DHS" / COUNTRY
