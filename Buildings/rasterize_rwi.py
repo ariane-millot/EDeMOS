@@ -34,23 +34,22 @@ if __name__ == "__main__":
 
 importlib.reload(config)
 
-out_path = config.RWI_PATH
-
-## RWI layer
-rwi_path = config.RWI_PATH
-rwi_name = config.RWI_FILE_CSV
+field = "rwi"    # Field (column) based on which the rasterization will be based
+resolution = 2400     # in meters
+out_raster_name = 'rwi_map_proj.tif'
+out_raster_name_crs = config.RWI_MAP_TIF
+# out_raster_name_crs = config.RWISTD_MAP_TIF
+outFile = os.path.join(config.RWI_PATH, out_raster_name)
 
 ## Import Relative Wealth Index | convert to geodf | export as gpkg
-rwi = pd.read_csv(rwi_path / rwi_name)
+rwi = pd.read_csv(config.RWI_PATH / config.RWI_FILE_CSV)
+# rwi = gpd.read_file(config.RWI_PATH / config.RWI_FILE_GPKG)
 rwi_gdf = gpd.GeoDataFrame(rwi, geometry=gpd.points_from_xy(rwi.longitude, rwi.latitude), crs=config.CRS_WGS84)
-filename_without_ext = rwi_name.split(".")[0]
-rwi_gdf.to_file(os.path.join(rwi_path, f"{filename_without_ext}_{config.COUNTRY}.gpkg"), driver="GPKG")
-
-# rwi_gdf.to_file(os.path.join(rwi_path,"{c}".format(c=rwi_name.split(".")[0])), driver="GPKG")
+filename_without_ext =  config.RWI_FILE_CSV.split(".")[0]
+rwi_gdf.to_file(os.path.join(config.RWI_PATH, f"{filename_without_ext}_{config.COUNTRY}.gpkg"), driver="GPKG")
 
 # Reproject data to the proper coordinate system for the country
 rwi_gdf_proj = rwi_gdf.to_crs(config.CRS_PROJ)    # for Zambia
-
 rwi_gdf.head(2)
 
 # Define rasterizaton function
@@ -95,15 +94,9 @@ def rasterize_vector(inD, outFile, field, res=0.1, dtype='float32'):
 
 # Rasterize & export geodataframe by calling the function
 
-field = "rwi"    # Field (column) based on which the rasterization will be based
-resolution = 2400     # in meters
-out_raster_name = 'rwi_map_proj.tif'
-out_raster_name_crs = config.RWI_MAP_TIF
-outFile = os.path.join(out_path, out_raster_name)
-
 rasterize_vector(rwi_gdf_proj, outFile, field=field, res=resolution)
 
-src = rasterio.open(out_path / out_raster_name)
+src = rasterio.open(config.RWI_PATH/out_raster_name)
 
 # getting extent from bounds for proper vizualization
 src_extent = np.asarray(src.bounds)[[0,2,1,3]]
@@ -113,7 +106,7 @@ plt.imshow(src.read(1), cmap='inferno', extent=src_extent)
 
 plt.show()
 
-# Define project function
+# Define reproject function
 
 def reproj(input_raster, output_raster, new_crs, factor):
     dst_crs = new_crs
@@ -144,8 +137,8 @@ def reproj(input_raster, output_raster, new_crs, factor):
 
 
 # Provide the input raster and give a name to the output (reprojected) raster
-input_raster = out_path / out_raster_name
-output_raster = out_path / out_raster_name_crs
+input_raster = config.RWI_PATH / out_raster_name
+output_raster = config.RWI_PATH / out_raster_name_crs
 
 # Set target CRS
 new_crs = config.CRS_WGS84
