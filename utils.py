@@ -6,23 +6,51 @@ import json
 import os
 import pandas as pd
 import config
-
+from exactextract import exact_extract
 
 # Define extraction functions
-
-def processing_raster(name, method, clusters, filepath=None):
+def processing_raster(name, method, clusters, filepath):
+    """
+    A high-performance version using the exactextract library.
+    'clusters' should be a GeoDataFrame.
+    """
     if not filepath:
-        raise ValueError("Filepath for processing_raster cannot be None or empty.")
-    raster = rasterio.open(filepath)
-    
-    clusters = zonal_stats(
-        clusters,
-        raster.name,
-        stats=[method],
-        prefix=name, geojson_out=True, all_touched=True)
-    
-    print(datetime.datetime.now())
-    return clusters
+        raise ValueError("Filepath cannot be None or empty.")
+    print("Starting extraction:", datetime.datetime.now())
+    # It returns a list of dictionaries, one for each feature.
+    results = exact_extract(
+        filepath,         # The raster
+        clusters,     # The GeoDataFrame
+        [method],         # The list of stats to compute
+        output='pandas'   # Get the output as a pandas DataFrame
+    )
+
+    # The resulting dataframe has columns like 'mean', 'sum', etc.
+    # We rename the column to match our desired prefix.
+    results.rename(columns={method: f"{name}{method}"}, inplace=True)
+
+    # Join the results back to the original GeoDataFrame
+    clusters_with_stats = clusters.join(results)
+    print("Extraction done:", datetime.datetime.now())
+    return clusters_with_stats
+
+
+# def processing_raster(name, method, clusters, filepath=None):
+#     if not filepath:
+#         raise ValueError("Filepath for processing_raster cannot be None or empty.")
+#     print("Extraction starting:", datetime.datetime.now())
+    # with rasterio.open(filepath) as raster:
+    #     clusters = zonal_stats(
+    #         clusters,
+    #         raster.name,
+    #         stats=[method],
+    #         prefix=name,
+    #         geojson_out=True,
+    #         all_touched=False #False #True originally
+    #     )
+    #
+    # print(datetime.datetime.now())
+    # return clusters
 
 
 def finalizing_rasters(workspace, clusters, crs):
