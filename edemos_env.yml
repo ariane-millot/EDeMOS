@@ -27,4 +27,5 @@ dependencies:
     - h3pandas
     - matplotlib-scalebar
     - seaborn
+    - exactextract
 
