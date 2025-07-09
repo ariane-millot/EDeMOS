@@ -252,11 +252,18 @@ def load_rwi_data(grid_gdf, app_config):
     print("Performing spatial join...")
     # joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="within")
     joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="intersects")
+    # Store the count BEFORE deduplication
+    count_before = len(joined_gdf)
     # If a point intersects two hexagons, it will create two rows. We only want one.
     # We drop duplicates based on the point's original index.
     joined_gdf = joined_gdf.drop_duplicates(subset=['latitude', 'longitude'])
     # The result 'joined_gdf' contains data for each point, plus the index ('index_right')
     # of the hexagon it belongs to.
+    # Store the count AFTER deduplication
+    count_after = len(joined_gdf)
+    # Calculate and print the number of duplicates removed
+    duplicates_removed = count_before - count_after
+    print(f"\nIdentified and removed {duplicates_removed} duplicate assignments.")
     print(f"Found {len(joined_gdf)} RWI points located within the hexagon grid.")
 
     # --- 6. AGGREGATE RWI VALUES PER HEXAGON ---
