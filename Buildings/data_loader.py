@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import geopandas as gpd
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 
 def load_initial_data(app_config):
@@ -250,8 +250,11 @@ def load_rwi_data(grid_gdf, app_config):
     # 'op'='within' finds which points are within which polygons.
     # 'how'='inner' keeps only the points that fall within a hexagon.
     print("Performing spatial join...")
-    joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="within")
-
+    # joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="within")
+    joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="intersects")
+    # If a point intersects two hexagons, it will create two rows. We only want one.
+    # We drop duplicates based on the point's original index.
+    joined_gdf = joined_gdf.drop_duplicates(subset=['latitude', 'longitude'])
     # The result 'joined_gdf' contains data for each point, plus the index ('index_right')
     # of the hexagon it belongs to.
     print(f"Found {len(joined_gdf)} RWI points located within the hexagon grid.")
@@ -308,6 +311,57 @@ def load_rwi_data(grid_gdf, app_config):
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
     plt.show()
+
+    investigation=False
+    if investigation == True:
+        print("\n--- Investigating Unjoined Points ---")
+
+        # First, let's find the points that were NOT joined.
+        # We can do this by finding the indices from the original rwi_gdf that are NOT in the joined_gdf.
+        # NOTE: The 'joined_gdf' contains the original index from 'rwi_gdf' in its own index.
+        joined_indices = joined_gdf.index
+        unjoined_points_gdf = rwi_gdf[~rwi_gdf.index.isin(joined_indices)]
+
+        print(f"Found {len(unjoined_points_gdf)} unjoined points, which matches our calculation (35547 - 35069 = 478).")
+
+
+        # Now, let's visualize them to see where they are.
+        if not unjoined_points_gdf.empty:
+            print("Creating a diagnostic map to show unjoined points...")
+            fig, ax = plt.subplots(1, 1, figsize=(15, 12))
+
+            # 1. Plot the hexagon grid as the base layer
+            hex_grid.plot(
+                ax=ax,
+                color='lightgray',
+                edgecolor='white',
+                linewidth=0.5
+            )
+
+            # 2. Plot the successfully joined points in blue (optional, can be slow if many points)
+            # joined_gdf.plot(
+            #     ax=ax,
+            #     color='blue',
+            #     markersize=1,
+            #     label='Joined Points'
+            # )
+
+            # 3. Plot the UNJOINED points in a highly visible color, like red.
+            unjoined_points_gdf.plot(
+                ax=ax,
+                color='red',
+                markersize=10, # Make them bigger so they are easy to see
+                label='Unjoined Points'
+            )
+
+            ax.set_title('Diagnostic Map: Unjoined RWI Points (in Red)', fontsize=16)
+            ax.set_xlabel('Longitude')
+            ax.set_ylabel('Latitude')
+            plt.legend()
+            plt.show()
+
+        else:
+            print("No unjoined points were found.")
 
     return hex_grid_with_rwi
 
