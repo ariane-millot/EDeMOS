@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import geopandas as gpd
+import matplotlib as plt
+
 
 def load_initial_data(app_config):
     """
@@ -125,15 +127,15 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     )
     print(f"Processed HREA Lighting.")
 
-    # RWI
-    path_rwi = os.path.join(app_config.RWI_PATH, app_config.RWI_MAP_TIF)
-    grid_gdf = processing_raster_func(
-        name="rwi",
-        method=DEFAULT_RASTER_METHOD_RWI,
-        clusters=grid_gdf,
-        filepath=path_rwi
-    )
-    print(f"Processed RWI.")
+    # # RWI
+    # path_rwi = os.path.join(app_config.RWI_PATH, app_config.RWI_MAP_TIF)
+    # grid_gdf = processing_raster_func(
+    #     name="rwi",
+    #     method=DEFAULT_RASTER_METHOD_RWI,
+    #     clusters=grid_gdf,
+    #     filepath=path_rwi
+    # )
+    # print(f"Processed RWI.")
 
     # Falchetta Tiers - Majority
     path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
@@ -171,7 +173,7 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
         f"buildings{DEFAULT_RASTER_METHOD_BUILDINGS}": app_config.COL_BUILDINGS_SUM, # e.g. buildingssum
         f"locationWP{DEFAULT_RASTER_METHOD_LOCATIONWP}": app_config.COL_LOCATION_WP, # e.g. locationWPmedian
         f"HREA{DEFAULT_RASTER_METHOD_HREA}": app_config.COL_HREA_MEAN, # e.g. HREAmean
-        f"rwi{DEFAULT_RASTER_METHOD_RWI}": app_config.COL_RWI_MEAN, # e.g. rwimean
+        # f"rwi{DEFAULT_RASTER_METHOD_RWI}": app_config.COL_RWI_MEAN, # e.g. rwimean
         f"tiers_falchetta_maj{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ}": app_config.COL_TIERS_FALCHETTA_MAJ,
         f"tiers_falchetta_mean{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN}": app_config.COL_TIERS_FALCHETTA_MEAN,
         # f"GDP_PPP{app_config.DEFAULT_RASTER_METHOD_GDP}" = app_config.COL_GDP_PPP_MEAN,
@@ -193,16 +195,122 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     else:
         print(f"Warning: Column {app_config.COL_HREA_MEAN} not found for fillna.")
 
-    # Add values in RWI column when there is none
-    if app_config.COL_RWI_MEAN in grid_gdf.columns:
-        grid_gdf[app_config.COL_RWI_MEAN].fillna(grid_gdf[app_config.COL_RWI_MEAN].mean(numeric_only=True).round(1), inplace=True)
-        # print(f"RWI min after fillna: {grid_gdf[app_config.COL_RWI_MEAN].min()}")
-        # print(f"RWI max after fillna: {grid_gdf[app_config.COL_RWI_MEAN].max()}")
-    else:
-        print(f"Warning: Column {app_config.COL_RWI_MEAN} not found for fillna.")
+    # # Add values in RWI column when there is none
+    # if app_config.COL_RWI_MEAN in grid_gdf.columns:
+    #     grid_gdf[app_config.COL_RWI_MEAN].fillna(grid_gdf[app_config.COL_RWI_MEAN].mean(numeric_only=True).round(1), inplace=True)
+    #     # print(f"RWI min after fillna: {grid_gdf[app_config.COL_RWI_MEAN].min()}")
+    #     # print(f"RWI max after fillna: {grid_gdf[app_config.COL_RWI_MEAN].max()}")
+    # else:
+    #     print(f"Warning: Column {app_config.COL_RWI_MEAN} not found for fillna.")
     print(grid_gdf.crs)
     print("Finished extracting and processing raster data.")
     return grid_gdf
+
+
+def load_rwi_data(grid_gdf, app_config):
+    """
+    Extracts RWI to the grid cells.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+
+    Returns:
+        GeoDataFrame: The grid GeoDataFrame with added raster data columns.
+    """
+    try:
+        rwi_df = pd.read_csv(app_config.RWI_PATH / app_config.RWI_FILE_CSV)
+    except Exception as e:
+        print(f"Error loading RWI CSV file: {e}")
+        print("Please ensure the path is correct and the file exists.")
+        exit()
+    hex_grid = grid_gdf
+    print(f"Loaded {len(hex_grid)} hexagons.")
+    print(f"Loaded {len(rwi_df)} RWI data points.")
+
+    # --- 3. CREATE A GEODATAFRAME FROM THE RWI CSV ---
+    # The RWI data uses 'longitude' and 'latitude' columns.
+    # We convert these into Point geometries to create a GeoDataFrame.
+    print("Creating GeoDataFrame from RWI data...")
+    rwi_gdf = gpd.GeoDataFrame(
+        rwi_df,
+        geometry=gpd.points_from_xy(rwi_df.longitude, rwi_df.latitude),
+        crs=app_config.CRS_WGS84  # The RWI data is in WGS84 (EPSG:4326)
+    )
+
+    # --- 4. ENSURE CONSISTENT COORDINATE REFERENCE SYSTEMS (CRS) ---
+    if hex_grid.crs != rwi_gdf.crs:
+        print(f"Original hexagon CRS: {hex_grid.crs}")
+        print(f"RWI points CRS: {rwi_gdf.crs}")
+        print("CRS do not match! Error in the workflow!")
+        exit()
+
+    # --- 5. PERFORM THE SPATIAL JOIN ---
+    # This operation will associate each RWI point with the hexagon it falls within.
+    # 'op'='within' finds which points are within which polygons.
+    # 'how'='inner' keeps only the points that fall within a hexagon.
+    print("Performing spatial join...")
+    joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="within")
+
+    # The result 'joined_gdf' contains data for each point, plus the index ('index_right')
+    # of the hexagon it belongs to.
+    print(f"Found {len(joined_gdf)} RWI points located within the hexagon grid.")
+
+    # --- 6. AGGREGATE RWI VALUES PER HEXAGON ---
+    # If multiple RWI points fall into a single hexagon, we need to aggregate them.
+    # We will group by the hexagon's index and calculate the mean RWI.
+    # We also calculate standard deviation and count for more detailed analysis.
+    if not joined_gdf.empty:
+        print("Aggregating RWI values for each hexagon...")
+        # Group by the index of the hexagon grid ('index_right' is added by sjoin)
+        rwi_agg = joined_gdf.groupby('index_right').agg(
+            rwi_mean=('rwi', 'mean'),
+            rwi_std=('rwi', 'std'),
+            rwi_count=('rwi', 'count')
+        )
+    else:
+        print("No RWI points were found within any hexagons. Cannot aggregate.")
+        rwi_agg = pd.DataFrame(columns=['rwi_mean', 'rwi_std', 'rwi_count'])
+
+    print("Done")
+
+    # --- 7. MERGE AGGREGATED DATA BACK TO THE HEXAGON GRID ---
+    # We now join our aggregated RWI statistics back to the original hexagon GeoDataFrame.
+    print("Merging aggregated data back to the hexagon grid...")
+    # Use a 'left' join to keep all original hexagons, even if they have no RWI data.
+    # Hexagons with no points will have NaN values for the new columns.
+    hex_grid_with_rwi = hex_grid.merge(
+        rwi_agg,
+        left_index=True,
+        right_index=True,
+        how="left"
+    )
+
+    print("Final GeoDataFrame created.")
+
+    # --- 8. (OPTIONAL) VISUALIZE THE RESULT ---
+    print("Generating map...")
+    fig, ax = plt.subplots(1, 1, figsize=(15, 12))
+    hex_grid_with_rwi.plot(
+        column='rwi_mean',      # Color hexagons by the mean RWI
+        ax=ax,
+        legend=True,
+        legend_kwds={'label': "Mean Relative Wealth Index (RWI)",
+                     'orientation': "horizontal"},
+        missing_kwds={           # Style for hexagons with no data
+            "color": "lightgrey",
+            "edgecolor": "white",
+            "hatch": "///",
+            "label": "No data",
+        }
+    )
+    ax.set_title('Mean RWI per Hexagon', fontdict={'fontsize': '16', 'fontweight': '3'})
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    plt.show()
+
+    return hex_grid_with_rwi
+
 
 
 def load_un_stats(app_config):
