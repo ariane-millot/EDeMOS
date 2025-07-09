@@ -282,6 +282,6 @@ if __name__ == "__main__":
     infile = config.RESIDENTIAL_GRID_FILE  # Read file containing the mean relative wealth index ("rwi") of each hexagon on map
     grid = read_csv(infile)
 
-    estimate_energy_rwi_link_national(grid, config, recalculate_energy_perhh=True)
+    estimate_energy_rwi_link_national(grid, config)
     grid.to_csv(infile,index=False)
 
