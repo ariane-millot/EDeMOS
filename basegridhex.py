@@ -16,14 +16,16 @@ from matplotlib_scalebar.scalebar import ScaleBar
 
 import config
 
+"""### Functions for creating heaxgons"""
+
+from create_hex import*
+
 """### Define area of interest"""
 
 area = config.AREA_OF_INTEREST
 print(area)
 
-"""### Functions for creating heaxgons"""
 
-from create_hex import*
 
 """### Import layers to be used"""
 
@@ -68,55 +70,60 @@ print("Clipping hexagons and attaching region attributes...")
 hexagons = gpd.sjoin(hexagons_unclipped,  region_gdf[[config.ADMIN_REGION_COLUMN_NAME, "geometry"]], how="inner", predicate="intersects")
 # The sjoin adds an 'index_right' column
 hexagons = hexagons.drop(columns=['index_right'])
+hexagons = hexagons.drop(columns=['index'])
 hexagons = hexagons.drop_duplicates(subset='h3_index').reset_index(drop=True)
+hexagons['id'] = range(1, len(hexagons)+1)
+print(hexagons.columns)
+# is_unique = hexagons['h3_index'].is_unique
+# print(f"Are all h3_index values unique? {is_unique}")
+# hexagons.set_index('h3_index')
 
 """#### Select base map grid"""
+def plot_and_save_map(hexagons, admin_gdf, region_gdf):
+    # Plot basemap
+    plt.rcParams.update({'font.size': 22})
+    fig, ax = plt.subplots(figsize=(25, 15))
 
-# Plot basemap
-plt.rcParams.update({'font.size': 22})
-fig, ax = plt.subplots(figsize=(25, 15))
+    # Convert the dataset to a coordinate
+    hexagons.plot(ax=ax, edgecolor='brown', alpha=0.2)
+    admin_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
+    region_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
+    ax.set_aspect('equal', 'box')
+    # Add latitude and longitude labels
+    ax.set_xlabel('Longitude (°)')
+    ax.set_ylabel('Latitude (°)')
 
+    # Compute the distance-per-pixel of the map
+    # see https://geopandas.org/en/latest/gallery/matplotlib_scalebar.html#Geographic-coordinate-system-(degrees)
+    assert admin_gdf.crs == config.CRS_WGS84
+    from shapely.geometry.point import Point
+    points = gpd.GeoSeries(
+        [Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=4326
+    )  # Geographic WGS 84 - degrees
+    points = points.to_crs(32619)  # Projected WGS 84 - meters
+    distance_meters = points[0].distance(points[1])
 
-# Convert the dataset to a coordinate
-hexagons.plot(ax=ax, edgecolor='brown', alpha=0.2)
-admin_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
-region_gdf.plot(ax=ax, edgecolor='brown', alpha=0.2)
-ax.set_aspect('equal', 'box')
-# Add latitude and longitude labels
-ax.set_xlabel('Longitude (°)')
-ax.set_ylabel('Latitude (°)')
+    # Add a scale bar
+    scalebar = ScaleBar(
+        distance_meters,
+        dimension="si-length",
+        location='lower left',
+        length_fraction=0.1,
+        width_fraction=0.001,
+        units='m',
+        color='black',
+        fixed_value=None
+    )
 
-# Compute the distance-per-pixel of the map
-# see https://geopandas.org/en/latest/gallery/matplotlib_scalebar.html#Geographic-coordinate-system-(degrees)
-assert admin_gdf.crs == config.CRS_WGS84
-from shapely.geometry.point import Point
-points = gpd.GeoSeries(
-    [Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=4326
-)  # Geographic WGS 84 - degrees
-points = points.to_crs(32619)  # Projected WGS 84 - meters
-distance_meters = points[0].distance(points[1])
+    ax.add_artist(scalebar)
 
-# Add a scale bar
-scalebar = ScaleBar(
-    distance_meters,
-    dimension="si-length",
-    location='lower left',
-    length_fraction=0.1,
-    width_fraction=0.001,
-    units='m',
-    color='black',
-    fixed_value=None
-)
+    # plt.show()
+    # Save plot as figure
+    plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.png', bbox_inches='tight')
+    plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.svg', format='svg', bbox_inches='tight')
+    print(f"Map saved to {config.OUTPUT_DIR}")
 
-ax.add_artist(scalebar)
-
-# plt.show()
-# Save plot as figure
-plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.png', bbox_inches='tight')
-plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.svg', format='svg', bbox_inches='tight')
-
-
-hexagons['id'] = range(1, len(hexagons)+1)
+plot_and_save_map(hexagons, admin_gdf, region_gdf)
 
 # Export dataframe to csv or gpkg
 #hexagons.to_csv(config.OUTPUT_DIR  + "\\" + f'h3_grid_at_hex_{size}.csv', index=False)
