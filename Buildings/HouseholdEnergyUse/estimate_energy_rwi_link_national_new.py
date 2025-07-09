@@ -84,7 +84,7 @@ def estimate_energy_rwi_link_national(grid, app_config):
         col_HH_access = 'HHwithAccess_' + residence_type[:3]
         include = np.flatnonzero(grid[col_HH_access]>0)
         f_elec = grid[col_HH_access][include].to_numpy(float)/grid[col_HH][include].to_numpy(float)
-        rwi_grid = grid['rwi'][include].to_numpy(float)
+        rwi_grid = grid[app_config.COL_RWI_MEAN][include].to_numpy(float)
 
         if recalculate_energies:
             # Select centers of selection probability distribution
