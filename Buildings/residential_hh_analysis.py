@@ -349,19 +349,28 @@ def estimate_hh_with_access(grid_gdf, app_config, df_HH_buildings, data_HH):
             total_population_withAccess = grid_gdf['population_withAccess'].sum()
             print(f"Total population with access (estimated): {total_population_withAccess:,.0f}")
 
+
+        def safe_divide(numerator, denominator):
+            """Performs division and returns 0 where the denominator is zero."""
+            if np.isscalar(denominator):
+                return numerator / denominator if denominator != 0 else np.nan
+            else: # It's an array/Series
+                return np.where(denominator == 0, np.nan, numerator / denominator)
+
+
         # Calculate access rates in df_HH_buildings
-        df_HH_buildings['accessRateHH'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS] / df_HH_buildings['HH_total']).replace([np.inf, -np.inf, np.nan], 0)
-        df_HH_buildings['accessRateHH_urban'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS_URB] / df_HH_buildings['HH_urban']).replace([np.inf, -np.inf, np.nan], 0)
-        df_HH_buildings['accessRateHH_rural'] = (df_HH_buildings[app_config.COL_HH_WITH_ACCESS] / df_HH_buildings['HH_rural']).replace([np.inf, -np.inf, np.nan], 0)
+        df_HH_buildings['accessRateHH'] = safe_divide(df_HH_buildings[app_config.COL_HH_WITH_ACCESS], df_HH_buildings['HH_total'])
+        df_HH_buildings['accessRateHH_urban'] = safe_divide(df_HH_buildings[app_config.COL_HH_WITH_ACCESS_URB], df_HH_buildings['HH_urban'])
+        df_HH_buildings['accessRateHH_rural'] = safe_divide(df_HH_buildings[app_config.COL_HH_WITH_ACCESS], df_HH_buildings['HH_rural'])
 
         # Add national summary to df_HH_buildings
         if not df_HH_buildings.empty:
             df_sum = df_HH_buildings[[col for col in df_HH_buildings.columns if col != app_config.COL_ADMIN_NAME]].sum(axis=0, numeric_only=True)
             df_sum[app_config.COL_ADMIN_NAME] = 'National'
             # Recalculate rates for National summary
-            df_sum['accessRateHH'] = df_sum[app_config.COL_HH_WITH_ACCESS] / df_sum['HH_total']
-            df_sum['accessRateHH_urban'] = df_sum[app_config.COL_HH_WITH_ACCESS_URB] / df_sum['HH_urban']
-            df_sum['accessRateHH_rural'] = df_sum[app_config.COL_HH_WITH_ACCESS_RUR] / df_sum['HH_rural']
+            df_sum['accessRateHH'] = safe_divide(df_sum[app_config.COL_HH_WITH_ACCESS] , df_sum['HH_total'])
+            df_sum['accessRateHH_urban'] = safe_divide(df_sum[app_config.COL_HH_WITH_ACCESS_URB], df_sum['HH_urban'])
+            df_sum['accessRateHH_rural'] = safe_divide(df_sum[app_config.COL_HH_WITH_ACCESS_RUR], df_sum['HH_rural'])
             df_sum = pd.DataFrame(df_sum).T.set_index(app_config.COL_ADMIN_NAME)
             df_HH_buildings = pd.concat([df_HH_buildings, df_sum])
 
