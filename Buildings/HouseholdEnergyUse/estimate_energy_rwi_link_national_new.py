@@ -44,7 +44,8 @@ def estimate_energy_rwi_link_national(grid, app_config):
     # Read file containing data from DHS survey of households
     infile_DHS = app_config.DHS_HOUSEHOLD_DATA_CSV
     dataDHS_all = read_csv(infile_DHS)
-    wealth_index = 1e-5 * dataDHS_all["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
+    # wealth_index = 1e-5 * dataDHS_all["Wealth index factor score for urban/rural (5 decimals)"].to_numpy(float)
+    wealth_index = 1e-5 * dataDHS_all["Wealth index factor score combined (5 decimals)"].to_numpy(float)
     if make_figure:
         min_wealth = wealth_index.min()
         max_wealth = wealth_index.max()
@@ -115,27 +116,57 @@ def estimate_energy_rwi_link_national(grid, app_config):
             
             # The above code has created a look-up table between mean group rwi (r_group), mean group access rate (f_group), and peak of selection window (rwi)
             if simulate_cell_groups:
+                # 1. Create a mask to find rows where rwi_grid are finite
+                finite_mask = np.isfinite(rwi_grid)
+                # You can add a print statement here for debugging to see if you are losing data
+                print(f"Found {np.sum(finite_mask)} finite data points out of {len(rwi_grid)}")
+                # 2. Create "clean" versions of the arrays for the griddata input
+                rwi_grid_clean = rwi_grid[finite_mask]
+                f_elec_clean = f_elec[finite_mask]
+
                 # Now we use this to set the selection function peak that will closely match each cell's values of rwi_grid and f_elec
-                rwi_peak = griddata(np.stack((rwi_group.flatten(),f_group.flatten()),axis=1),
+                rwi_peak_clean = griddata(np.stack((rwi_group.flatten(),f_group.flatten()),axis=1),
                                                     np.array(Na*[rwi]).flatten(),
-                                                    np.stack((rwi_grid,f_elec),axis=1),
+                                                    np.stack((rwi_grid_clean,f_elec_clean),axis=1),
                                                     method='nearest')
+                # points_source = np.stack((rwi_group.flatten(), f_group.flatten()), axis=1)
+                # values_source = np.array(Na*[rwi]).flatten()
+                #
+                # # Now, call griddata ONLY with the clean data
+                # rwi_peak_clean = griddata(points_source,
+                #                           values_source,
+                #                           np.stack((rwi_grid_clean, f_elec_clean), axis=1),
+                #                           method='nearest')
+                # 3. Create a full-size rwi_peak array and place the clean results back
+                # This ensures alignment with the original grid.
+                rwi_peak = np.full(rwi_grid.shape, np.nan)
+                rwi_peak[finite_mask] = rwi_peak_clean
                 # Prepare array to store simulated groups of households for each cell
                 group = np.zeros((rwi_peak.size,group_size),dtype=int)
                 # Create subsamples of survey households
                 for k in range(rwi_peak.size):
-                    pn = selection_window(rwi_DHS[no_access],rwi_peak[k],group_sigma,tail_cutoff)
-                    pa = selection_window(rwi_DHS[has_access],rwi_peak[k],group_sigma,tail_cutoff)
-                    group[k,:] = np.append(
-                        np.random.choice(no_access,int(round(group_size*(1-f_elec[k]),0)),p=pn),
-                        np.random.choice(has_access,int(round(group_size*f_elec[k],0)),p=pa)
-                    )
+                    if np.isfinite(rwi_peak[k]):
+                        pn = selection_window(rwi_DHS[no_access],rwi_peak[k],group_sigma,tail_cutoff)
+                        pa = selection_window(rwi_DHS[has_access],rwi_peak[k],group_sigma,tail_cutoff)
+                        if pn.sum() > 0 and pa.sum() > 0:
+                            group[k,:] = np.append(
+                                np.random.choice(no_access, int(round(group_size*(1-f_elec[k]), 0)), p=pn),
+                                np.random.choice(has_access, int(round(group_size*f_elec[k], 0)), p=pa)
+                            )
+                        # group[k,:] = np.append(
+                        #     np.random.choice(no_access,int(round(group_size*(1-f_elec[k]),0)),p=pn),
+                        #     np.random.choice(has_access,int(round(group_size*f_elec[k],0)),p=pa)
+                        # )
                 # Calculation average rwi, average energy use for each group
                 # Now these groups are the simulated groups that match the cell averages
-                rwi_group = np.nanmean(rwi_DHS[group],axis=1)
-                eu_group = np.nanmean(eu[group],axis=1)
-                f_group = np.sum(elec[group],axis=1)/group_size
-            
+                # rwi_group = np.nanmean(rwi_DHS[group],axis=1)
+                # eu_group = np.nanmean(eu[group],axis=1)
+                # f_group = np.sum(elec[group],axis=1)/group_size
+                # Use np.nanmean to safely ignore empty/invalid groups
+                with np.errstate(invalid='ignore', divide='ignore'): # Suppress warnings from mean of empty slice
+                    rwi_group = np.nanmean(np.where(group > 0, rwi_DHS[group], np.nan), axis=1)
+                    eu_group = np.nanmean(np.where(group > 0, eu[group], np.nan), axis=1)
+                    f_group = np.nansum(np.where(group > 0, elec[group], 0), axis=1) / group_size
                 # Update global arrays
                 energy_demand[i,include] = eu_group.copy()
                 rwi_simulated_group[i,include] = rwi_group.copy()
@@ -191,8 +222,8 @@ def estimate_energy_rwi_link_national(grid, app_config):
             if x_axis_cells_results_option is True:
                 # option to choose a different x-axis
                 # Parameters for the graphs
-                min_rwi = np.floor(grid['rwi'][include].min())
-                max_rwi = np.ceil(grid['rwi'][include].max())
+                min_rwi = np.floor(grid[app_config.COL_RWI_MEAN][include].min())
+                max_rwi = np.ceil(grid[app_config.COL_RWI_MEAN][include].max())
                 print(min_rwi, max_rwi)
                 xl = np.array([min_rwi, max_rwi])  # Limits for x-axis of plots (wealth index)
                 ax1.set_xlim(xl)
