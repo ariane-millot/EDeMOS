@@ -74,7 +74,7 @@ def load_initial_data(app_config):
 
 # General parameters for raster extraction
 DEFAULT_RASTER_METHOD_BUILDINGS = "sum"
-DEFAULT_RASTER_METHOD_LOCATIONWP = "median"
+DEFAULT_RASTER_METHOD_LOCATIONWP = "majority"
 DEFAULT_RASTER_METHOD_HREA = "mean"
 DEFAULT_RASTER_METHOD_RWI = "mean"
 DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ = "majority"
@@ -265,7 +265,7 @@ def load_rwi_data(grid_gdf, app_config):
     duplicates_removed = count_before - count_after
     print(f"\nIdentified and removed {duplicates_removed} duplicate assignments.")
     print(f"Found {len(joined_gdf)} RWI points located within the hexagon grid.")
-
+    print(joined_gdf.columns)
     # --- 6. AGGREGATE RWI VALUES PER HEXAGON ---
     # If multiple RWI points fall into a single hexagon, we need to aggregate them.
     # We will group by the hexagon's index and calculate the mean RWI.
