@@ -137,24 +137,24 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     # )
     # print(f"Processed RWI.")
 
-    # Falchetta Tiers - Majority
-    path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
-    grid_gdf = processing_raster_func(
-        name="tiers_falchetta_maj",
-        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ,
-        clusters=grid_gdf,
-        filepath=path_falchetta_tiers
-    )
-    print(f"Processed Falchetta Tiers (Majority).")
-
-    # Falchetta Tiers - Mean
-    grid_gdf = processing_raster_func(
-        name="tiers_falchetta_mean",
-        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN,
-        clusters=grid_gdf,
-        filepath=path_falchetta_tiers
-    )
-    print(f"Processed Falchetta Tiers (Mean).")
+    # # Falchetta Tiers - Majority
+    # path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
+    # grid_gdf = processing_raster_func(
+    #     name="tiers_falchetta_maj",
+    #     method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ,
+    #     clusters=grid_gdf,
+    #     filepath=path_falchetta_tiers
+    # )
+    # print(f"Processed Falchetta Tiers (Majority).")
+    #
+    # # Falchetta Tiers - Mean
+    # grid_gdf = processing_raster_func(
+    #     name="tiers_falchetta_mean",
+    #     method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN,
+    #     clusters=grid_gdf,
+    #     filepath=path_falchetta_tiers
+    # )
+    # print(f"Processed Falchetta Tiers (Mean).")
 
     # GDP
     # path_gdp = os.path.join(app_config.GDP_PATH, app_config.GDP_PPP_TIF)
@@ -209,26 +209,27 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
 
 def load_rwi_data(grid_gdf, app_config):
     """
-    Extracts RWI to the grid cells.
+    Extracts RWI to the grid cells using a two-step process:
+    1. A standard spatial join for points that fall directly inside hexagons.
+    2. A nearest neighbor join for empty hexagons to ensure full coverage.
 
     Args:
         grid_gdf: GeoDataFrame of the hexagonal grid.
         app_config: The configuration module.
 
     Returns:
-        GeoDataFrame: The grid GeoDataFrame with added raster data columns.
+        GeoDataFrame: The grid GeoDataFrame with RWI data columns.
     """
+    # --- 1. LOAD AND PREPARE RWI POINT DATA ---
     try:
         rwi_df = pd.read_csv(app_config.RWI_PATH / app_config.RWI_FILE_CSV)
     except Exception as e:
         print(f"Error loading RWI CSV file: {e}")
-        print("Please ensure the path is correct and the file exists.")
-        exit()
-    hex_grid = grid_gdf
-    print(f"Loaded {len(hex_grid)} hexagons.")
-    print(f"Loaded {len(rwi_df)} RWI data points.")
+        return
 
-    # --- 3. CREATE A GEODATAFRAME FROM THE RWI CSV ---
+    print(f"Loaded {len(grid_gdf)} hexagons and {len(rwi_df)} RWI data points.")
+
+    # --- 2. CREATE A GEODATAFRAME FROM THE RWI CSV ---
     # The RWI data uses 'longitude' and 'latitude' columns.
     # We convert these into Point geometries to create a GeoDataFrame.
     print("Creating GeoDataFrame from RWI data...")
@@ -238,83 +239,91 @@ def load_rwi_data(grid_gdf, app_config):
         crs=app_config.CRS_WGS84  # The RWI data is in WGS84 (EPSG:4326)
     )
 
-    # --- 4. ENSURE CONSISTENT COORDINATE REFERENCE SYSTEMS (CRS) ---
-    if hex_grid.crs != rwi_gdf.crs:
-        print(f"Original hexagon CRS: {hex_grid.crs}")
+    # --- 3. ENSURE CONSISTENT COORDINATE REFERENCE SYSTEMS (CRS) ---
+    if grid_gdf.crs != rwi_gdf.crs:
+        print(f"Original hexagon CRS: {grid_gdf.crs}")
         print(f"RWI points CRS: {rwi_gdf.crs}")
         print("CRS do not match! Error in the workflow!")
         exit()
 
-    # --- 5. PERFORM THE SPATIAL JOIN ---
-    # This operation will associate each RWI point with the hexagon it falls within.
-    # 'op'='within' finds which points are within which polygons.
-    # 'how'='inner' keeps only the points that fall within a hexagon.
-    print("Performing spatial join...")
-    # joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="within")
-    joined_gdf = gpd.sjoin(rwi_gdf, hex_grid, how="inner", predicate="intersects")
-    # Store the count BEFORE deduplication
-    count_before = len(joined_gdf)
-    # If a point intersects two hexagons, it will create two rows. We only want one.
-    # We drop duplicates based on the point's original index.
-    joined_gdf = joined_gdf.drop_duplicates(subset=['latitude', 'longitude'])
-    # The result 'joined_gdf' contains data for each point, plus the index ('index_right')
-    # of the hexagon it belongs to.
-    # Store the count AFTER deduplication
-    count_after = len(joined_gdf)
-    # Calculate and print the number of duplicates removed
-    duplicates_removed = count_before - count_after
-    print(f"\nIdentified and removed {duplicates_removed} duplicate assignments.")
-    print(f"Found {len(joined_gdf)} RWI points located within the hexagon grid.")
-    print(joined_gdf.columns)
-    # --- 6. AGGREGATE RWI VALUES PER HEXAGON ---
-    # If multiple RWI points fall into a single hexagon, we need to aggregate them.
-    # We will group by the hexagon's index and calculate the mean RWI.
-    # We also calculate standard deviation and count for more detailed analysis.
+    # --- 4. STEP 1: STANDARD SPATIAL JOIN (for points inside hexagons) ---
+    print("Step 1: Performing standard spatial join for points inside hexagons...")
+
+    # Use 'intersects' and deduplicate for points on boundaries
+    joined_gdf = gpd.sjoin(rwi_gdf, grid_gdf, how="inner", predicate="intersects")
+    joined_gdf.drop_duplicates(subset=['latitude', 'longitude'], inplace=True)
+
+    print(f"Aggregating RWI values for {len(joined_gdf)} matched points...")
     if not joined_gdf.empty:
-        print("Aggregating RWI values for each hexagon...")
-        # Group by the index of the hexagon grid ('index_right' is added by sjoin)
-        rwi_agg = joined_gdf.groupby('index_right').agg(
+        # Use the correct index column ('index_right' or a variant)
+        # It's safer to check for it. Let's assume the previous issue might persist.
+        join_index_col = 'index_right' if 'index_right' in joined_gdf.columns else 'index_right0'
+        # ---. AGGREGATE RWI VALUES PER HEXAGON
+        rwi_agg = joined_gdf.groupby(join_index_col).agg(
             rwi_mean=('rwi', 'mean'),
             rwi_std=('rwi', 'std'),
             rwi_count=('rwi', 'count')
         )
+
+        # Merge the aggregated data back
+        hex_grid_with_rwi = grid_gdf.merge(
+            rwi_agg,
+            left_index=True,
+            right_index=True,
+            how="left"
+        )
     else:
         print("No RWI points were found within any hexagons. Cannot aggregate.")
-        rwi_agg = pd.DataFrame(columns=['rwi_mean', 'rwi_std', 'rwi_count'])
+        exit()
 
-    print("Done")
+    num_empty = hex_grid_with_rwi['rwi_mean'].isna().sum()
+    print(f"Step 1 Complete. {num_empty} hexagons are still empty.")
 
-    # --- 7. MERGE AGGREGATED DATA BACK TO THE HEXAGON GRID ---
-    # We now join our aggregated RWI statistics back to the original hexagon GeoDataFrame.
-    print("Merging aggregated data back to the hexagon grid...")
-    # Use a 'left' join to keep all original hexagons, even if they have no RWI data.
-    # Hexagons with no points will have NaN values for the new columns.
-    hex_grid_with_rwi = hex_grid.merge(
-        rwi_agg,
-        left_index=True,
-        right_index=True,
-        how="left"
-    )
+    # --- 3. STEP 2: NEAREST NEIGHBOR JOIN (for empty hexagons) ---
+    if num_empty > 0:
+        print("\nStep 2: Performing nearest neighbor join for empty hexagons...")
 
-    print("Final GeoDataFrame created.")
+        # Isolate the empty hexagons
+        empty_hexagons = hex_grid_with_rwi[hex_grid_with_rwi['rwi_mean'].isna()].copy()
 
-    # --- 8. (OPTIONAL) VISUALIZE THE RESULT ---
-    print("Generating map...")
+        # Perform the nearest join. This finds the closest RWI point for each empty hexagon.
+        # This can be memory intensive if there are many empty hexagons.
+        nearest_join = gpd.sjoin_nearest(empty_hexagons, rwi_gdf, how='left')
+
+        print(f"Found nearest RWI points for {len(nearest_join)} empty hexagons.")
+
+        # Aggregate the results from the nearest join. We just want the mean (which is just the single rwi value)
+        # Group by the original index of the empty_hexagons dataframe.
+        nearest_agg = nearest_join.groupby(nearest_join.index).agg(
+            rwi_mean=('rwi', 'mean') # Use the rwi value from the nearest point
+        )
+
+        # Update the main dataframe with the new values from the nearest join
+        print("Updating main grid with values from nearest neighbors...")
+        hex_grid_with_rwi.update(nearest_agg)
+
+        # Also fill the count for these newly added hexagons
+        hex_grid_with_rwi['rwi_count'].fillna(1, inplace=True) # They are based on 1 nearest point
+
+    final_empty_count = hex_grid_with_rwi['rwi_mean'].isna().sum()
+    if final_empty_count > 0:
+        print(f"Warning: After all steps, {final_empty_count} hexagons are still empty.")
+    else:
+        print("\nStep 2 Complete. All hexagons now have an RWI value.")
+
+
+    # --- 4. VISUALIZE AND RETURN ---
+    print("\nGenerating final map...")
     fig, ax = plt.subplots(1, 1, figsize=(15, 12))
     hex_grid_with_rwi.plot(
-        column='rwi_mean',      # Color hexagons by the mean RWI
+        column='rwi_mean',
         ax=ax,
         legend=True,
-        legend_kwds={'label': "Mean Relative Wealth Index (RWI)",
-                     'orientation': "horizontal"},
-        missing_kwds={           # Style for hexagons with no data
-            "color": "lightgrey",
-            "edgecolor": "white",
-            "hatch": "///",
-            "label": "No data",
-        }
+        legend_kwds={'label': "Mean Relative Wealth Index (RWI)", 'orientation': "horizontal"},
+        missing_kwds={"color": "red", "label": "Still Missing!"}
     )
-    ax.set_title('Mean RWI per Hexagon', fontdict={'fontsize': '16', 'fontweight': '3'})
+    # ax.set_title('Mean RWI per Hexagon (with Nearest Neighbor Fill)', fontsize=16)
+    ax.set_title('Mean RWI per Hexagon (with Nearest Neighbor Fill)', fontdict={'fontsize': '16', 'fontweight': '3'})
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
     plt.show()
@@ -338,7 +347,7 @@ def load_rwi_data(grid_gdf, app_config):
             fig, ax = plt.subplots(1, 1, figsize=(15, 12))
 
             # 1. Plot the hexagon grid as the base layer
-            hex_grid.plot(
+            grid_gdf.plot(
                 ax=ax,
                 color='lightgray',
                 edgecolor='white',
