@@ -343,8 +343,8 @@ def estimate_hh_with_access(grid_gdf, app_config, df_HH_buildings, data_HH):
         if app_config.COL_POPULATION in grid_gdf.columns: # Check if population was calculated
             get_size_HH = lambda row: data_HH.loc[row[app_config.COL_ADMIN_NAME], f"size_HH_{row[app_config.COL_LOC_ASSESSED]}"] \
                                   if row[app_config.COL_ADMIN_NAME] in data_HH.index else np.nan
-            grid_gdf['population_urban_withAccess'] = grid_gdf[app_config.COL_POPULATION] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
-            grid_gdf['population_rural_withAccess'] = grid_gdf[app_config.COL_POPULATION] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_urban_withAccess'] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
+            grid_gdf['population_rural_withAccess'] = grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
             grid_gdf['population_withAccess'] = grid_gdf['population_urban_withAccess'] + grid_gdf['population_rural_withAccess']
             total_population_withAccess = grid_gdf['population_withAccess'].sum()
             print(f"Total population with access (estimated): {total_population_withAccess:,.0f}")
