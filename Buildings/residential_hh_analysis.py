@@ -136,6 +136,52 @@ def determine_electrification_status(grid_gdf, app_config, admin_gdf):
     return grid_gdf
 
 
+def calculate_household_numbers_popinput(grid_gdf, app_config, data_HH, df_censusdata):
+    """
+    Calculates household numbers per grid cell direclty from the population input file.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        data_HH: DataFrame with census data.
+
+    Returns:
+               - grid_gdf: Updated grid GeoDataFrame with new household columns.
+    """
+    if app_config.PROVINCE_DATA_AVAILABLE:
+        # --- Step 1: Create the mapping Series from data_HH ---
+        # This creates a Series where the index is the province ('region')
+        # and the values are the urban household sizes.
+        urban_hh_size_map = data_HH['size_HH_urban']
+
+        # This does the same for rural household sizes.
+        rural_hh_size_map = data_HH['size_HH_rural']
+        # --- Step 2: Map these sizes to your grid geodataframe ---
+        # This creates a new column in 'grid' by looking up each province (app_config.COL_ADMIN_NAME)
+        # in the corresponding map.
+        grid_gdf['temp_urban_hh_size'] = grid_gdf[app_config.COL_ADMIN_NAME].map(urban_hh_size_map)
+        grid_gdf['temp_rural_hh_size'] = grid_gdf[app_config.COL_ADMIN_NAME].map(rural_hh_size_map)
+
+        # --- Step 3: Select the correct household size for each grid cell ---
+        # Use np.where for a fast conditional selection.
+        # If grid['locationWP'] is 'urban', use the value from 'temp_urban_hh_size',
+        # otherwise, use the value from 'temp_rural_hh_size'.
+        grid_gdf['hh_size'] = np.where(grid_gdf[app_config.COL_LOC_ASSESSED] == 'urban',
+                                   grid_gdf['temp_urban_hh_size'],
+                                   grid_gdf['temp_rural_hh_size'])
+        # --- Step 4: Compute the number of households ---
+        grid_gdf[app_config.COL_HH_TOTAL] = grid_gdf[app_config.COL_POPULATION_WP] / grid_gdf['hh_size']
+
+        # --- Step 5: Clean up the temporary columns ---
+        grid_gdf.drop(columns=['temp_urban_hh_size', 'temp_rural_hh_size', 'hh_size'], inplace=True)
+    else:
+        grid_gdf['hh_size'] = np.where(grid_gdf[app_config.COL_LOC_ASSESSED] == 'urban',
+                                   df_censusdata['size_HH_urban'],
+                                   df_censusdata['size_HH_rural'])
+        grid_gdf[app_config.COL_HH_TOTAL] = grid_gdf[app_config.COL_POPULATION_WP] / grid_gdf['hh_size']
+
+    return grid_gdf
+
 def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
     """
     Calculates residential building counts and household numbers per grid cell.
