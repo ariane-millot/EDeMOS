@@ -75,6 +75,7 @@ def load_initial_data(app_config):
 # General parameters for raster extraction
 DEFAULT_RASTER_METHOD_BUILDINGS = "sum"
 DEFAULT_RASTER_METHOD_LOCATIONWP = "majority"
+DEFAULT_RASTER_METHOD_POP  = "sum"
 DEFAULT_RASTER_METHOD_HREA = "mean"
 DEFAULT_RASTER_METHOD_RWI = "mean"
 DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ = "majority"
@@ -184,7 +185,6 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     actual_rename_map = {k: v for k, v in rename_map.items() if k in grid_gdf.columns}
     grid_gdf.rename(columns=actual_rename_map, inplace=True)
     print(f"Columns after renaming: {grid_gdf.columns}")
-    print(grid_gdf.crs)
     # Fill NaN values with tier 0
     if app_config.COL_TIERS_FALCHETTA_MEAN in grid_gdf.columns:
         grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN] = grid_gdf[app_config.COL_TIERS_FALCHETTA_MEAN].fillna(0).round().astype(int)
@@ -203,6 +203,69 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     # else:
     #     print(f"Warning: Column {app_config.COL_RWI_MEAN} not found for fillna.")
     print(grid_gdf.crs)
+    print("Finished extracting and processing raster data.")
+    return grid_gdf
+
+
+def clean_nan_location_wp(grid_gdf, app_config):
+    valid_grid = grid_gdf[grid_gdf[app_config.COL_LOCATION_WP].notna()].copy()
+    nan_grid = grid_gdf[grid_gdf[app_config.COL_LOCATION_WP].isna()].copy()
+
+    if not nan_grid.empty:
+        # Perform a spatial join to find the nearest valid cell for each NaN cell
+        # This adds columns from 'valid_grid' (including 'locationWP') to 'nan_grid'
+        nan_grid_filled = gpd.sjoin_nearest(nan_grid.drop(columns=[app_config.COL_LOCATION_WP]), valid_grid)
+
+        # The join might create duplicates if a NaN cell is equidistant to multiple valid cells.
+        # We keep only the first match for each original NaN cell by its index.
+        nan_grid_filled = nan_grid_filled[~nan_grid_filled.index.duplicated(keep='first')]
+
+        # Now, update the original 'grid' with the filled values
+        # The 'locationWP_right' column comes from the 'valid_grid' during the join
+        grid_gdf.loc[nan_grid_filled.index, app_config.COL_LOCATION_WP] = nan_grid_filled['locationWP']
+
+        print("NaN values filled using nearest neighbor.")
+        print(grid_gdf[app_config.COL_LOCATION_WP].isna().sum()) # Should be 0
+
+    return grid_gdf
+
+
+def extract_pop_raster_data(grid_gdf, app_config, processing_raster_func, convert_features_to_geodataframe):
+    """
+    Extracts raster data (WorldPop, HREA, RWI, Falchetta Tiers) to the grid cells.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid.
+        app_config: The configuration module.
+        processing_raster_func: The `utils.processing_raster` function.
+
+    Returns:
+        GeoDataFrame: The grid GeoDataFrame with added raster data columns.
+    """
+    print("Extracting raster data...")
+    initial_crs = grid_gdf.crs
+    print(grid_gdf.crs)
+    # WorldPop Population Count
+    path_wp_pop_count = os.path.join(app_config.WORLDPOP_PATH, app_config.WP_POPULATION_TIF)
+    grid_gdf = processing_raster_func(
+        name="population",
+        method=DEFAULT_RASTER_METHOD_POP,
+        clusters=grid_gdf,
+        filepath=path_wp_pop_count
+    )
+    print(f"Processed WorldPop Population Count.")
+
+    grid_gdf = convert_features_to_geodataframe(grid_gdf, initial_crs)
+    print(grid_gdf.crs)
+    # Column renaming based on how processing_raster forms column names (prefix + method)
+    rename_map = {
+        f"population{DEFAULT_RASTER_METHOD_BUILDINGS}": app_config.COL_POPULATION_WP,
+    }
+
+    # Filter out renames for columns not actually present
+    actual_rename_map = {k: v for k, v in rename_map.items() if k in grid_gdf.columns}
+    grid_gdf.rename(columns=actual_rename_map, inplace=True)
+    print(f"Columns after renaming: {grid_gdf.columns}")
     print("Finished extracting and processing raster data.")
     return grid_gdf
 
