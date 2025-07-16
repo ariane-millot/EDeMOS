@@ -95,6 +95,7 @@ COL_H3_ID = 'h3_index' # the ID column in h3_grid_at_hex.shp
 
 # Processed column names
 COL_BUILDINGS_SUM = 'buildingssum'
+COL_POPULATION_WP = 'populationWP'
 COL_LOCATION_WP = 'locationWP' # after processing_raster
 COL_HREA_MEAN = 'HREA' # after processing_raster and rename
 PROB_ELEC_COL = COL_HREA_MEAN # residential analysis parameters
@@ -127,6 +128,8 @@ COL_HH_WO_ACCESS_RUR = 'HHwoAccess_rur'
 COL_HH_WO_ACCESS = 'HHwoAccess'
 
 COL_RWI_NORM = 'rwi_norm'
+COL_RWI_MODIFIED = 'rwi_modified'
+COL_RWI_ANALYSIS = 'rwi_analysis'
 COL_RES_ELEC_PER_HH_LOG = 'elec_perHH_kWh_log'
 COL_RES_ELEC_PER_HH_DHS = 'elec_perHH_kWh_DHS'
 COL_RES_ELEC_KWH_METH1 = 'res_elec_kWh_meth1'
