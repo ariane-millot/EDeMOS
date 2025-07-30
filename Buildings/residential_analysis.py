@@ -78,7 +78,7 @@ def calculate_total_residential_electricity(grid_gdf, app_config, total_resident
 
     # Ensure required input columns exist
     required_cols_meth1 = [app_config.COL_RES_ELEC_PER_HH_LOG, app_config.COL_HH_WITH_ACCESS]
-    required_cols_meth2 = [app_config.COL_RES_ELEC_PER_HH_DHS, app_config.COL_HH_WITH_ACCESS]
+    required_cols_meth2 = [app_config.COL_RES_ELEC_PER_HH_KWH_DHS, app_config.COL_HH_WITH_ACCESS]
 
     for col in required_cols_meth1:
         if col not in grid_gdf.columns: raise KeyError(f"Method 1: Column '{col}' not found.")
