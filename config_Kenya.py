@@ -40,6 +40,8 @@ buffer_distance_meters = 1000 # This should be larger than half the diagonal of 
 # Link: https://apps.worldpop.org/peanutButter/
 WP_BUILDINGS_COUNT_TIF = f"{ISO_CODE}_buildings_v1_1_count.tif"
 WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v1_1_urban.tif"
+WP_POPULATION_TIF =f"{ISO_CODE}_population_2022_v2_0_gridded_total.tif"
+USE_POP_FILE = False
 
 # Lighting file
 # # set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
