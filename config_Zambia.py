@@ -59,7 +59,7 @@ FALCHETTA_TIERS_TIF = f"tiersofaccess_SSA_2018_band1_{COUNTRY}.tif"
 
 # GDP file Kummu dataset
 # Link https://www.nature.com/articles/sdata20184#Sec9
-# GDP_PPP_TIF = "GDP_PPP_30arcsec_v3_band3_Zambia.tif"
+# GDP_PPP_TIF = "GDP_PPP_30arcsec_v3_band3_{COUNTRY}.tif"
 
 # UN Energy Balance file
 # https://data.un.org/SdmxBrowser/start
@@ -148,6 +148,15 @@ DHS_SURVEY_HH_old_to_new_names = {
     "Generator": "Generator",
     "Microwave": "Microwave",
 }
+
+# DHS Input Columns
+DHS_CLUSTER = "Cluster number"
+DHS_WEALTH_INDEX = "Wealth index factor score combined (5 decimals)"
+DHS_WEIGHT = "Household sample weight (6 decimals)"
+DHS_ELEC_ACCESS = "Electricity"
+DHS_URBAN_RURAL = "Type of place of residence"
+DHS_PROVINCE = "Province"
+
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use.csv'
 TIER = np.array([0, 0, 0, 1, 2, 2, 3, 4])
