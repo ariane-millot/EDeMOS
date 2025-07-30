@@ -23,7 +23,6 @@ Set the variable ACTIVE_COUNTRY in [config.py](config.py).
 As required for the specific country (see below). Files need to be named and put in folders to match the paths given in the [config.py](config.py) and config_{Country}.py
 
 ### 4. Run data conversion scripts
-- [rasterize_rwi.py](Buildings/rasterize_rwi.py) (This may take several minutes or more to run)
 - [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py)
 - [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) 
 (select appropriate labels in config file)
