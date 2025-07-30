@@ -39,6 +39,8 @@ buffer_distance_meters = 1000 # This should be larger than half the diagonal of 
 # Link: https://apps.worldpop.org/peanutButter/
 WP_BUILDINGS_COUNT_TIF = f"{ISO_CODE}_buildings_v2_0_count.tif"
 WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v2_0_urban.tif"
+WP_POPULATION_TIF =f"{ISO_CODE}_population_2022_v2_0_gridded_total.tif"
+USE_POP_FILE = False
 
 # Lighting file
 # # set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
@@ -99,6 +101,7 @@ DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 
 # Households labels
 # Choose the labels to be selected from the .do file
+# label variable hv001    "Cluster number"
 #label variable hv005       "Household sample weight (6 decimals)"
 #label variable hv009       "Number of household members",
 #label variable hv022       "Sample strata for sampling errors"
@@ -125,7 +128,7 @@ DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 # label variable hv211    "Has motorcycle/scooter"
 # label variable hv212    "Has car/truck"
 # label variable hv226    "Type of cooking fuel"
-labels_hh = ['hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
+labels_hh = ['hv001', 'hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
              'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m',
              'hv270', 'hv270a', 'hv271', 'hv271a',
              'hv201', 'hv205', 'hv211', 'hv212', 'hv226',
@@ -179,10 +182,6 @@ LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
-DHS_MAKE_FIGURE = True
-DHS_RECALCULATE_ENERGIES = True
-DHS_SIMULATE_CELL_GROUPS = True
-DHS_RECALCULATE_ENERGY_PERHH = True
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
 
