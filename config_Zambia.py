@@ -182,9 +182,9 @@ LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
+DHS_RECALCULATE_ENERGY_PERHH = True
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
-
 
 # Tiers for comparison
 BINS_TIERS_ENERGY = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, float('inf')]
