@@ -92,6 +92,7 @@ ADMIN_REGION_COLUMN_NAME = "NAME_1"
 # -----------------------------------------------------------------------------
 # Input columns from H3 grid
 COL_H3_ID = 'h3_index' # the ID column in h3_grid_at_hex.shp
+COL_ADMIN_NAME = ADMIN_REGION_COLUMN_NAME
 
 # Processed column names
 COL_BUILDINGS_SUM = 'buildingssum'
@@ -103,8 +104,6 @@ COL_RWI_MEAN = 'rwi_mean'
 COL_TIERS_FALCHETTA_MAJ = 'tiers_falchetta_maj'
 COL_TIERS_FALCHETTA_MEAN = 'tiers_falchetta_mean'
 COL_GDP_PPP_MEAN = 'GDP_PPP'
-
-COL_ADMIN_NAME = ADMIN_REGION_COLUMN_NAME
 
 COL_LOC_ASSESSED = 'location' # Final urban/rural column
 COL_STATUS_ELECTRIFIED = 'status_electrified'
@@ -129,11 +128,13 @@ COL_HH_WO_ACCESS = 'HHwoAccess'
 
 COL_RWI_NORM = 'rwi_norm'
 COL_RWI_MODIFIED = 'rwi_modified'
+COL_RWI_REGION_MODIFIED  = 'rwi_region_modified'
 COL_RWI_ANALYSIS = 'rwi_analysis'
 COL_RES_ELEC_PER_HH_LOG = 'elec_perHH_kWh_log'
-COL_RES_ELEC_PER_HH_DHS = 'elec_perHH_kWh_DHS'
+COL_RES_ELEC_PER_HH_KWH_DHS = 'elec_perHH_kWh_DHS'
 COL_RES_ELEC_KWH_METH1 = 'res_elec_kWh_meth1'
 COL_RES_ELEC_KWH_METH2 = 'res_elec_kWh_meth2'
+COL_RES_TOTAL_ELEC_KWH_DHS = 'res_elec_kWh_dhs'
 COL_RES_ELEC_KWH_METH1_SCALED = 'res_elec_kWh_meth1_scaled'
 COL_RES_ELEC_KWH_METH2_SCALED = 'res_elec_kWh_meth2_scaled'
 COL_RES_ELEC_KWH_FINAL = 'res_elec_kWh_final'
