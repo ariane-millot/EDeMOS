@@ -4,7 +4,7 @@ import sys
 
 
 # Update the household_data file based on information in appliance_energy_use.csv
-def compute_energy_perhh_DHS(app_config, elas=0.4,nominal_household_size=4):
+def compute_energy_perhh_dhs(app_config, elas=0.4,nominal_household_size=4):
 
     # Read-in the data on appliances and energy tiers
     data_apps = read_csv(app_config.RESIDENTIAL_DATA_PATH / app_config.APPLIANCE_ELECTRICITY_CONS, header=1)
@@ -16,14 +16,14 @@ def compute_energy_perhh_DHS(app_config, elas=0.4,nominal_household_size=4):
 
     # Read-in the data from the survey of households
     data = read_csv(app_config.DHS_HOUSEHOLD_DATA_CSV)
-    Nh = data.shape[0]
-    print('Read data on', Nh, 'survey households')
+    number_hh = data.shape[0]
+    print('Read data on', number_hh, 'survey households')
     # Read columns into 2d array on appliance usage
     appliance_use = data[appliance].to_numpy(int)
     household_size = data['Number of household members']
 
     # Create array ready to store energy use estimates
-    energy_use = np.zeros(Nh)
+    energy_use = np.zeros(number_hh)
 
     # Create array to give the mapping between appliance usage and tier
     tier = np.array([0, 0, 0, 1, 2, 2, 2, 3, 4])
@@ -61,7 +61,7 @@ def compute_energy_perhh_DHS(app_config, elas=0.4,nominal_household_size=4):
 
 
     # --- Configuration for Tier Override Rules ---
-    # Define rules here. The code will process them from highest tier to lowest.
+    # Define rules here. The code will process them from the highest tier to the lowest.
     # A household will only be assigned the first (highest-tier) rule it matches.
     override_rules = [
         {'column': 'Source of drinking water', 'value': 'bottled water', 'tier': 4},
@@ -127,4 +127,4 @@ def compute_energy_perhh_DHS(app_config, elas=0.4,nominal_household_size=4):
 if __name__ == "__main__":
     sys.path.insert(1, '../../')
     import config
-    compute_energy_perhh_DHS(config)
+    compute_energy_perhh_dhs(config)
