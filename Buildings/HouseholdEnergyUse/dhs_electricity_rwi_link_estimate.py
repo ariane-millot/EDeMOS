@@ -252,6 +252,12 @@ def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFra
 
 
 def estimate_electricity_rwi_link(grid_gdf, app_config):
+    
+    # Run the script to assess electricity consumption of households in the DHS dataset
+    recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
+    if recalculate_energy_perhh:
+        from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_dhs
+        compute_energy_perhh_dhs(app_config)
 
     # --- Step 1: Load DHS Data ---
     print("--- 1. Loading and Preparing DHS Data ---")
