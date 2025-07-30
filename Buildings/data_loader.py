@@ -128,16 +128,6 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     )
     print(f"Processed HREA Lighting.")
 
-    # # RWI
-    # path_rwi = os.path.join(app_config.RWI_PATH, app_config.RWI_MAP_TIF)
-    # grid_gdf = processing_raster_func(
-    #     name="rwi",
-    #     method=DEFAULT_RASTER_METHOD_RWI,
-    #     clusters=grid_gdf,
-    #     filepath=path_rwi
-    # )
-    # print(f"Processed RWI.")
-
     # # Falchetta Tiers - Majority
     # path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
     # grid_gdf = processing_raster_func(
@@ -174,7 +164,6 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
         f"buildings{DEFAULT_RASTER_METHOD_BUILDINGS}": app_config.COL_BUILDINGS_SUM, # e.g. buildingssum
         f"locationWP{DEFAULT_RASTER_METHOD_LOCATIONWP}": app_config.COL_LOCATION_WP, # e.g. locationWPmedian
         f"HREA{DEFAULT_RASTER_METHOD_HREA}": app_config.COL_HREA_MEAN, # e.g. HREAmean
-        # f"rwi{DEFAULT_RASTER_METHOD_RWI}": app_config.COL_RWI_MEAN, # e.g. rwimean
         f"tiers_falchetta_maj{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ}": app_config.COL_TIERS_FALCHETTA_MAJ,
         f"tiers_falchetta_mean{DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN}": app_config.COL_TIERS_FALCHETTA_MEAN,
         # f"GDP_PPP{app_config.DEFAULT_RASTER_METHOD_GDP}" = app_config.COL_GDP_PPP_MEAN,
@@ -195,13 +184,6 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     else:
         print(f"Warning: Column {app_config.COL_HREA_MEAN} not found for fillna.")
 
-    # # Add values in RWI column when there is none
-    # if app_config.COL_RWI_MEAN in grid_gdf.columns:
-    #     grid_gdf[app_config.COL_RWI_MEAN].fillna(grid_gdf[app_config.COL_RWI_MEAN].mean(numeric_only=True).round(1), inplace=True)
-    #     # print(f"RWI min after fillna: {grid_gdf[app_config.COL_RWI_MEAN].min()}")
-    #     # print(f"RWI max after fillna: {grid_gdf[app_config.COL_RWI_MEAN].max()}")
-    # else:
-    #     print(f"Warning: Column {app_config.COL_RWI_MEAN} not found for fillna.")
     print(grid_gdf.crs)
     print("Finished extracting and processing raster data.")
     return grid_gdf
@@ -443,7 +425,6 @@ def load_rwi_data(grid_gdf, app_config):
             print("No unjoined points were found.")
 
     return hex_grid_with_rwi
-
 
 
 def load_un_stats(app_config):
