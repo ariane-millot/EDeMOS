@@ -101,6 +101,7 @@ DHS_SERVICES_SURVEY_FILE = 'KEIR8CDT/KEIR8CFL'
 
 # Households labels
 # Choose the labels to be selected from the .do file
+# label variable hv001    "Cluster number"
 #label variable hv005       "Household sample weight (6 decimals)"
 #label variable hv009       "Number of household members",
 #label variable hv022       "Sample strata for sampling errors"
@@ -126,7 +127,7 @@ DHS_SERVICES_SURVEY_FILE = 'KEIR8CDT/KEIR8CFL'
 # label variable hv212    "Has car/truck"
 # label variable hv223    "Type of cooking fuel"
 # Warning: Kenya has no washing machine and no air conditioner labels
-labels_hh = ['hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
+labels_hh = ['hv001', 'hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
              'hv243e', 'sh132n', 'sh132o', 'sh132p',
              'hv270', 'hv270a', 'hv271', 'hv271a',
              'hv201', 'hv205', 'hv211', 'hv212', 'hv223',
@@ -149,6 +150,14 @@ DHS_SURVEY_HH_old_to_new_names = {
     "Household has a DVD player":  "DVD player",
     "Household has a Cassette or CD player": "CD player",
 }
+
+# DHS Input Columns
+DHS_CLUSTER = "Cluster number"
+DHS_WEALTH_INDEX = "Wealth index factor score combined (5 decimals)"
+DHS_WEIGHT = "Household sample weight (6 decimals)"
+DHS_ELEC_ACCESS = "Electricity"
+DHS_URBAN_RURAL = "Type of place of residence"
+DHS_PROVINCE = "Region"
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
 TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # modified: Kenya has no washing machine and no air conditioner labels
@@ -183,13 +192,9 @@ LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
-DHS_MAKE_FIGURE = True
-DHS_RECALCULATE_ENERGIES = True
-DHS_SIMULATE_CELL_GROUPS = True
 DHS_RECALCULATE_ENERGY_PERHH = True
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
-
 
 # Tiers for comparison
 BINS_TIERS_ENERGY = [0, 7, 72.9-0.1, 364.9-0.1, 1250.4-0.1, 3012.2-0.1, float('inf')]
