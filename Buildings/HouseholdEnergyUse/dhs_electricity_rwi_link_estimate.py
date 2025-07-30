@@ -28,14 +28,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsRegressor
 
 # --- Constants for Column Names ---
-# DHS Input Columns
-DHS_CLUSTER = "Cluster number"
-DHS_WEALTH_INDEX = "Wealth index factor score combined (5 decimals)"
-DHS_WEIGHT = "Household sample weight (6 decimals)"
-DHS_ELEC_ACCESS = "Electricity"
-DHS_URBAN_RURAL = "Type of place of residence"
-DHS_PROVINCE = "Province"
-
 # DHS Derived Columns
 WI_COMBINED = 'wi_combined'
 WEIGHT = 'weight'
@@ -85,24 +77,24 @@ def aggregate_dhs_to_clusters(dhs_data: pd.DataFrame, app_config) -> pd.DataFram
     agg_all_hh = {
         AVG_WI: (WI_COMBINED, 'mean'),
         ACCESS_RATE: (HAS_ACCESS, 'mean'),
-        NUM_HH: (DHS_CLUSTER, 'size'),
-        DHS_PROVINCE: (DHS_PROVINCE, 'first'),
-        DHS_URBAN_RURAL: (DHS_URBAN_RURAL, 'first')
+        NUM_HH: (app_config.DHS_CLUSTER, 'size'),
+        app_config.DHS_PROVINCE: (app_config.DHS_PROVINCE, 'first'),
+        app_config.DHS_URBAN_RURAL: (app_config.DHS_URBAN_RURAL, 'first')
     }
-    clusters_features_df = dhs_data.groupby(DHS_CLUSTER).agg(**agg_all_hh)
+    clusters_features_df = dhs_data.groupby(app_config.DHS_CLUSTER).agg(**agg_all_hh)
 
     # Aggregation on CONNECTED households to get the target variable
     dhs_with_access = dhs_data[dhs_data[HAS_ACCESS] == 1].copy()
     agg_connected_hh = {
         AVG_ELEC_CONNECTED: (app_config.DHS_ELEC_KWH_ASSESSED_SURVEY, 'mean')
     }
-    clusters_target_df = dhs_with_access.groupby(DHS_CLUSTER).agg(**agg_connected_hh)
+    clusters_target_df = dhs_with_access.groupby(app_config.DHS_CLUSTER).agg(**agg_connected_hh)
 
     # Merge features and target, keeping all clusters
     final_clusters_df = pd.merge(
         clusters_features_df,
         clusters_target_df,
-        on=DHS_CLUSTER,
+        on=app_config.DHS_CLUSTER,
         how='left'
     ).reset_index()
 
@@ -128,7 +120,7 @@ def calibrate_rwi_by_region(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, ap
 
     # Apply normalization to create temporary matching keys in both dataframes
     grid_df['_norm_region'] = grid_df[app_config.COL_ADMIN_NAME].apply(normalize_name)
-    clusters_df['_norm_province'] = clusters_df[DHS_PROVINCE].apply(normalize_name)
+    clusters_df['_norm_province'] = clusters_df[app_config.DHS_PROVINCE].apply(normalize_name)
 
     regions = grid_df['_norm_region'].unique()
 
@@ -200,8 +192,8 @@ def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFra
     grid_df[ACCESS_RATE] = (grid_df[app_config.COL_HH_WITH_ACCESS] / grid_df[app_config.COL_HH_TOTAL]).fillna(0)
 
     # 2. Split data into Urban and Rural subsets
-    urban_clusters = clusters_df[clusters_df[DHS_URBAN_RURAL] == 'urban']
-    rural_clusters = clusters_df[clusters_df[DHS_URBAN_RURAL] == 'rural']
+    urban_clusters = clusters_df[clusters_df[app_config.DHS_URBAN_RURAL] == 'urban']
+    rural_clusters = clusters_df[clusters_df[app_config.DHS_URBAN_RURAL] == 'rural']
     urban_grid = grid_df[grid_df[app_config.COL_LOC_ASSESSED] == 'urban'].copy()
     rural_grid = grid_df[grid_df[app_config.COL_LOC_ASSESSED] == 'rural'].copy()
 
@@ -264,9 +256,9 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     dhs_data = pd.read_csv(app_config.DHS_HOUSEHOLD_DATA_CSV)
 
     # Scale raw values and create standard columns
-    dhs_data[WI_COMBINED] = 1e-5 * dhs_data[DHS_WEALTH_INDEX]
-    dhs_data[WEIGHT] = 1e-6 * dhs_data[DHS_WEIGHT]
-    dhs_data[HAS_ACCESS] = dhs_data[DHS_ELEC_ACCESS].astype(int)
+    dhs_data[WI_COMBINED] = 1e-5 * dhs_data[app_config.DHS_WEALTH_INDEX]
+    dhs_data[WEIGHT] = 1e-6 * dhs_data[app_config.DHS_WEIGHT]
+    dhs_data[HAS_ACCESS] = dhs_data[app_config.DHS_ELEC_ACCESS].astype(int)
 
     print(f"Loaded {len(dhs_data)} household records.")
 
@@ -290,6 +282,17 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     print("\n--- 5. Final Results ---")
     total_gwh = grid_with_predictions[app_config.COL_RES_TOTAL_ELEC_KWH_DHS].sum() / 1e6
     print(f"Prediction complete. Total predicted consumption for the country: {total_gwh:,.2f} GWh")
+    # Group by the location type and sum the predicted energy for each group
+    consumption_by_type = grid_with_predictions.groupby(app_config.COL_LOC_ASSESSED)[app_config.COL_RES_TOTAL_ELEC_KWH_DHS].sum()
+    # Get urban and rural totals (using .get() for safety in case a category is missing)
+    urban_kwh = consumption_by_type.get('urban', 0)
+    rural_kwh = consumption_by_type.get('rural', 0)
+    # Convert to GWh
+    urban_gwh = urban_kwh / 1e6
+    rural_gwh = rural_kwh / 1e6
+    # Print the formatted results
+    print(f"  - Urban: {urban_gwh:,.2f} GWh")
+    print(f"  - Rural: {rural_gwh:,.2f} GWh")
 
     return grid_with_predictions
 
