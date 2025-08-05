@@ -172,8 +172,8 @@ def plot_rwi_distributions(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app
     sns.kdeplot(data=grid_df, x=app_config.COL_RWI_REGION_MODIFIED, weights='pct_households',
                 label='Region-Calibrated Grid RWI (Weighted)', color='orange', lw=3)
 
-    plt.title('Comparison of RWI & Wealth Index Distributions', fontsize=16)
-    plt.xlabel('Wealth Index / RWI Value')
+    plt.title('Comparison of wealth index distributions', fontsize=16)
+    plt.xlabel('DHS Wealth Index / RWI')
     plt.ylabel('Density')
     plt.legend()
     # plt.grid(axis='y', linestyle='--', alpha=0.7)
