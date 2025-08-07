@@ -128,24 +128,24 @@ def extract_raster_data(grid_gdf, app_config, processing_raster_func, convert_fe
     )
     print(f"Processed HREA Lighting.")
 
-    # # Falchetta Tiers - Majority
-    # path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
-    # grid_gdf = processing_raster_func(
-    #     name="tiers_falchetta_maj",
-    #     method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ,
-    #     clusters=grid_gdf,
-    #     filepath=path_falchetta_tiers
-    # )
-    # print(f"Processed Falchetta Tiers (Majority).")
-    #
-    # # Falchetta Tiers - Mean
-    # grid_gdf = processing_raster_func(
-    #     name="tiers_falchetta_mean",
-    #     method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN,
-    #     clusters=grid_gdf,
-    #     filepath=path_falchetta_tiers
-    # )
-    # print(f"Processed Falchetta Tiers (Mean).")
+    # Falchetta Tiers - Majority
+    path_falchetta_tiers = os.path.join(app_config.FALCHETTA_PATH, app_config.FALCHETTA_TIERS_TIF)
+    grid_gdf = processing_raster_func(
+        name="tiers_falchetta_maj",
+        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MAJ,
+        clusters=grid_gdf,
+        filepath=path_falchetta_tiers
+    )
+    print(f"Processed Falchetta Tiers (Majority).")
+
+    # Falchetta Tiers - Mean
+    grid_gdf = processing_raster_func(
+        name="tiers_falchetta_mean",
+        method=DEFAULT_RASTER_METHOD_TIERS_FALCHETTA_MEAN,
+        clusters=grid_gdf,
+        filepath=path_falchetta_tiers
+    )
+    print(f"Processed Falchetta Tiers (Mean).")
 
     # GDP
     # path_gdp = os.path.join(app_config.GDP_PATH, app_config.GDP_PPP_TIF)
