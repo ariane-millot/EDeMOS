@@ -174,12 +174,12 @@ UN_ENERGY_YEAR = YEAR
 
 # Residential demand parameters
 THRESHOLD_ELEC_ACCESS_URBAN = 0.9
-THRESHOLD_ELEC_ACCESS_RURAL = 0.1
+THRESHOLD_ELEC_ACCESS_RURAL = 0.3
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
 NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
 NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 1.0 # For HHwithAccess_urb calculation
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.75 #0.75 # For HHwithAccess_urb calculation
 
 # Residential energy per HH - Method 1 (Logistic RWI)
 LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
@@ -187,7 +187,7 @@ LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest t
 # alpha = E_threshold / 0.1 - 1. This implies a specific low energy value.
 # To get E_HH = 7kWh when rwi_norm is low (exp term ~1), E_threshold / (1+alpha) = 7.
 # For now, will keep E_threshold and how alpha is derived from it.
-LOGISTIC_K_INITIAL_GUESS = 5.0
+LOGISTIC_K_INITIAL_GUESS = 10
 
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
