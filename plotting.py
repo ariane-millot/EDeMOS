@@ -10,7 +10,7 @@ import geopandas as gpd
 
 
 def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_param, region_gdf_param, sector_name,
-                           lines_gdf=None, fig_size=(25, 15)):
+                           lines_gdf=None, fig_size=(25, 15), title = True):
     print(f"Plotting {sector_name} Consumption map...")
 
     if col_to_plot not in grid_gdf.columns:
@@ -61,7 +61,8 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         region_title = app_config.COUNTRY
     else:
         region_title = app_config.AREA_OF_INTEREST
-    ax.set_title(f'{sector_name} Electricity Consumption in {region_title} ({unit_label})')
+    if title:
+        ax.set_title(f'{sector_name} Electricity Consumption in {region_title} ({unit_label})')
 
     # Scalebar
     points = gpd.GeoSeries([Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=app_config.CRS_WGS84)  # Geographic WGS 84 - degrees
