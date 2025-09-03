@@ -31,12 +31,13 @@ def determine_location_status(grid_gdf, app_config):
     return grid_gdf
 
 
-def determine_electrification_status(grid_gdf, app_config, admin_gdf):
+def determine_electrification_status(grid_gdf, app_config, admin_gdf, prox_line=True):
     """
     Determines electrification status of grid cells based on proximity to MV/HV lines
     and HREA (High Resolution Electricity Access) likelihood scores.
 
     Args:
+        prox_line: Include the proximity of hv and mv lines.
         grid_gdf: GeoDataFrame of the hexagonal grid.
         app_config: The configuration module.
         admin_gdf: GeoDataFrame of admin boundaries
@@ -58,63 +59,65 @@ def determine_electrification_status(grid_gdf, app_config, admin_gdf):
     print(f"MV Lines CRS: {mv_lines_gdf.crs} | Shape: {mv_lines_gdf.shape}")
     print(f"HV Lines CRS: {hv_lines_gdf.crs} | Shape: {hv_lines_gdf.shape}")
     print(f"Target CRS for all operations: {target_crs}\n")
-    # --- STEP 1: PROJECT ALL DATA TO THE TARGET CRS ---
-    # This ensures all subsequent operations (clip, buffer, sjoin) are in the same
-    # projected, meter-based coordinate system.
 
-    print("--- Projecting all data to target CRS ---")
-    grid_projected = grid_gdf.to_crs(target_crs)
-    admin_projected = admin_gdf.to_crs(target_crs)
-    # mv_lines_projected = mv_lines_gdf.to_crs(target_crs)
-    # hv_lines_projected = hv_lines_gdf.to_crs(target_crs)
+    if prox_line:
+        # --- STEP 1: PROJECT ALL DATA TO THE TARGET CRS ---
+        # This ensures all subsequent operations (clip, buffer, sjoin) are in the same
+        # projected, meter-based coordinate system.
 
-    # Initialize the proximity column to False
-    grid_gdf[app_config.COL_IS_NEAR_ANY_LINE] = False
+        print("--- Projecting all data to target CRS ---")
+        grid_projected = grid_gdf.to_crs(target_crs)
+        admin_projected = admin_gdf.to_crs(target_crs)
+        # mv_lines_projected = mv_lines_gdf.to_crs(target_crs)
+        # hv_lines_projected = hv_lines_gdf.to_crs(target_crs)
 
-    # Define line types and their specific buffer distances
-    lines_to_process = [
-        {'name': 'HV Lines', 'gdf': hv_lines_gdf, 'buffer_dist': app_config.HV_LINES_BUFFER_DIST},
-        {'name': 'MV Lines', 'gdf': mv_lines_gdf, 'buffer_dist': app_config.MV_LINES_BUFFER_DIST}
-    ]
+        # Initialize the proximity column to False
+        grid_gdf[app_config.COL_IS_NEAR_ANY_LINE] = False
 
-    for line_info in lines_to_process:
-        current_lines_gdf = line_info['gdf']
-        line_name = line_info['name']
-        buffer_dist = line_info['buffer_dist']
-        print(f"Processing proximity for {line_name} with buffer {buffer_dist}m...")
+        # Define line types and their specific buffer distances
+        lines_to_process = [
+            {'name': 'HV Lines', 'gdf': hv_lines_gdf, 'buffer_dist': app_config.HV_LINES_BUFFER_DIST},
+            {'name': 'MV Lines', 'gdf': mv_lines_gdf, 'buffer_dist': app_config.MV_LINES_BUFFER_DIST}
+        ]
 
-        if current_lines_gdf.crs != target_crs:
-            lines_for_clip_and_buffer = current_lines_gdf.to_crs(target_crs)
-        else:
-            lines_for_clip_and_buffer = current_lines_gdf.copy()
+        for line_info in lines_to_process:
+            current_lines_gdf = line_info['gdf']
+            line_name = line_info['name']
+            buffer_dist = line_info['buffer_dist']
+            print(f"Processing proximity for {line_name} with buffer {buffer_dist}m...")
 
-        # 1. Clip lines
-        clipped_lines_gdf = gpd.clip(lines_for_clip_and_buffer, admin_projected)
-        if clipped_lines_gdf.empty:
-            print(f"No {line_name} found within the admin boundaries after clipping.")
-            continue
+            if current_lines_gdf.crs != target_crs:
+                lines_for_clip_and_buffer = current_lines_gdf.to_crs(target_crs)
+            else:
+                lines_for_clip_and_buffer = current_lines_gdf.copy()
 
-        # 2. Buffer
-        buffered_lines = clipped_lines_gdf.buffer(buffer_dist)
-        if buffered_lines.is_empty.all():
-            print(f"Buffer for {line_name} is empty. Skipping spatial join.")
-            continue
+            # 1. Clip lines
+            clipped_lines_gdf = gpd.clip(lines_for_clip_and_buffer, admin_projected)
+            if clipped_lines_gdf.empty:
+                print(f"No {line_name} found within the admin boundaries after clipping.")
+                continue
 
-        # 3. Create a GeoDataFrame of the individual buffers
-        buffered_areas_gdf = gpd.GeoDataFrame(geometry=buffered_lines, crs=target_crs)
+            # 2. Buffer
+            buffered_lines = clipped_lines_gdf.buffer(buffer_dist)
+            if buffered_lines.is_empty.all():
+                print(f"Buffer for {line_name} is empty. Skipping spatial join.")
+                continue
 
-        # 4. Perform the spatial join.
-        # Use an 'inner' join to get only the grid cells that intersect.
-        intersecting_grid = gpd.sjoin(grid_projected, buffered_areas_gdf, how='inner', predicate='intersects')
+            # 3. Create a GeoDataFrame of the individual buffers
+            buffered_areas_gdf = gpd.GeoDataFrame(geometry=buffered_lines, crs=target_crs)
 
-        # Get the unique indices of the original grid cells that are near the lines
-        indices_to_update = intersecting_grid.index.unique()
+            # 4. Perform the spatial join.
+            # Use an 'inner' join to get only the grid cells that intersect.
+            intersecting_grid = gpd.sjoin(grid_projected, buffered_areas_gdf, how='inner', predicate='intersects')
 
-        # 5. Update the 'is_near_any_line' column in the ORIGINAL grid.
-        grid_gdf.loc[indices_to_update, app_config.COL_IS_NEAR_ANY_LINE] = True
+            # Get the unique indices of the original grid cells that are near the lines
+            indices_to_update = intersecting_grid.index.unique()
 
-    print(f"Updated 'is_near_any_line' column. Current counts:")
-    print(grid_gdf['is_near_any_line'].value_counts())
+            # 5. Update the 'is_near_any_line' column in the ORIGINAL grid.
+            grid_gdf.loc[indices_to_update, app_config.COL_IS_NEAR_ANY_LINE] = True
+
+        print(f"Updated 'is_near_any_line' column. Current counts:")
+        print(grid_gdf['is_near_any_line'].value_counts())
 
     if app_config.PROB_ELEC_COL not in grid_gdf.columns:
         raise KeyError(f"Required column '{app_config.PROB_ELEC_COL}' not found in grid.")
@@ -123,14 +126,21 @@ def determine_electrification_status(grid_gdf, app_config, admin_gdf):
 
     # electrified or non-electrified status with thresholds depending on the location
     threshold_map = {'urban': app_config.THRESHOLD_ELEC_ACCESS_URBAN, 'rural': app_config.THRESHOLD_ELEC_ACCESS_RURAL}
-
-    grid_gdf[app_config.COL_STATUS_ELECTRIFIED] = grid_gdf.apply(
-        lambda row: "elec" if (
-            row[app_config.PROB_ELEC_COL] > threshold_map[row[app_config.COL_LOC_ASSESSED]] and
-            row[app_config.COL_IS_NEAR_ANY_LINE]
-        ) else "nonelec",
-        axis=1
-    )
+    if prox_line:
+        grid_gdf[app_config.COL_STATUS_ELECTRIFIED] = grid_gdf.apply(
+            lambda row: "elec" if (
+                row[app_config.PROB_ELEC_COL] > threshold_map[row[app_config.COL_LOC_ASSESSED]] and
+                row[app_config.COL_IS_NEAR_ANY_LINE]
+            ) else "nonelec",
+            axis=1
+        )
+    else:
+        grid_gdf[app_config.COL_STATUS_ELECTRIFIED] = grid_gdf.apply(
+            lambda row: "elec" if (
+                row[app_config.PROB_ELEC_COL] > threshold_map[row[app_config.COL_LOC_ASSESSED]]
+            ) else "nonelec",
+            axis=1
+        )
     print(f"'{app_config.COL_STATUS_ELECTRIFIED}' column created. Counts: {grid_gdf[app_config.COL_STATUS_ELECTRIFIED].value_counts().to_dict()}")
 
     return grid_gdf
