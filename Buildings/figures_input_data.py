@@ -81,3 +81,23 @@ def plot_line_proximity_map(grid_gdf, app_config, admin_gdf_param, fig_size=(15,
         # plt.show()
     else:
         print(f"Warning: Column '{app_config.COL_IS_NEAR_ANY_LINE}' not found for Line Proximity map.")
+
+def plot_electrified(grid_gdf, app_config, fig_size=(15, 10)):
+    print("Plotting electrified cells on map...")
+    fig, ax = plt.subplots(figsize=fig_size)
+    if app_config.COL_STATUS_ELECTRIFIED in grid_gdf.columns:
+        grid_gdf.sort_values(app_config.COL_STATUS_ELECTRIFIED, ascending=True).plot(
+            ax=ax, column=app_config.COL_STATUS_ELECTRIFIED, cmap="Reds", legend=True, alpha=0.5,categorical=True,
+            legend_kwds={
+                'labels': ['Electrified', 'Not electrified'],
+                'title': 'Grid Cell Elec Access',
+                'loc': 'upper left'
+            }
+        )
+
+        ax.set_aspect('equal', 'box')
+        ax.set_title(f'Elec Access in {app_config.AREA_OF_INTEREST}')
+        plt.savefig(app_config.RESIDENTIAL_OUTPUT_DIR / f'electrified_status_{app_config.COUNTRY}.png', bbox_inches='tight')
+        # plt.show()
+    else:
+        print(f"Warning: Column '{app_config.COL_STATUS_ELECTRIFIED}' not found for Line Proximity map.")
