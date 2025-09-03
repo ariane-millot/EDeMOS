@@ -177,9 +177,10 @@ THRESHOLD_ELEC_ACCESS_URBAN = 0.9
 THRESHOLD_ELEC_ACCESS_RURAL = 0.3
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.75 #0.75 # For HHwithAccess_urb calculation
+# Parameters below used to determine residential buildings but doesn't affect households numbers
 NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
 NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.75 #0.75 # For HHwithAccess_urb calculation
 
 # Residential energy per HH - Method 1 (Logistic RWI)
 LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
@@ -192,6 +193,8 @@ LOGISTIC_K_INITIAL_GUESS = 10
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
 DHS_RECALCULATE_ENERGY_PERHH = True
+DHS_ELAS = 0.4
+DHS_HH_SIZE = 4
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
 

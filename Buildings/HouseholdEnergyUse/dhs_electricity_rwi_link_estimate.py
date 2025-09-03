@@ -249,7 +249,7 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
     if recalculate_energy_perhh:
         from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_dhs
-        compute_energy_perhh_dhs(app_config)
+        compute_energy_perhh_dhs(app_config, elas=app_config.DHS_ELAS, nominal_household_size=app_config.DHS_HH_SIZE)
 
     # --- Step 1: Load DHS Data ---
     print("--- 1. Loading and Preparing DHS Data ---")
