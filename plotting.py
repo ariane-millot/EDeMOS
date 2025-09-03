@@ -25,8 +25,6 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
     elif 'kwh' in col_lower:
         grid_display[col_to_plot] = grid_display[col_to_plot] / 10**3 # kWh to MWh for display
         unit_label = 'MWh'
-        max_value = 1e6
-        min_value = 1e-3
     else:
         print(f"Warning: Could not detect a known unit (kWh, MWh, GWh) in column name '{col_to_plot}'. Plotting raw values.")
 
