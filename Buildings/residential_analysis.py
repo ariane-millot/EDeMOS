@@ -136,3 +136,98 @@ def calculate_total_residential_electricity(grid_gdf, app_config, total_resident
 
     print("Finished calculating and scaling total residential energy.")
     return grid_gdf
+
+
+def compare_access_to_falchetta(grid_gdf, app_config):
+    """
+    Compares calculated residential energy consumption tiers with Falchetta dataset tiers.
+
+    This function bins calculated per-household energy into tiers and compares the
+    distribution of households across these tiers against pre-loaded Falchetta tier data.
+    It also performs a similarity analysis between the DHS-based calculated tiers and
+    Falchetta's majority tier.
+
+    Args:
+        grid_gdf: GeoDataFrame of the hexagonal grid with energy consumption data.
+        app_config: The configuration module.
+
+    Returns:
+        GeoDataFrame: grid_gdf, potentially with added columns for tiering/comparison.
+    """
+    print("Comparing access tiers to Falchetta dataset...")
+
+    def calculate_tier_share_method(data_grid, method_suffix, hh_with_access_col, hh_wo_access_col, category_total_val):
+        # Helper for tier share calculation
+        tier_col_name = f'tiers_{method_suffix}'
+        if tier_col_name not in data_grid.columns:
+            # print(f"Warning: Tier column '{tier_col_name}' not found for method '{method_suffix}'.")
+            return pd.Series(dtype=float)
+        if category_total_val == 0: return pd.Series(dtype=float)
+
+        tier_share = data_grid.groupby(tier_col_name)[hh_with_access_col].sum()
+        if 0 in tier_share.index :
+            tier_share.loc[0] += data_grid[hh_wo_access_col].sum()
+        else:
+            tier_share.loc[0] = data_grid[hh_wo_access_col].sum()
+        return tier_share.sort_index() / category_total_val
+
+    bins_tiers = app_config.BINS_TIERS_ENERGY
+    tier_labels = range(len(bins_tiers) - 1)
+
+    categories_summary = {
+        'national': app_config.COL_HH_TOTAL, 'urban': app_config.COL_HH_URBAN, 'rural': app_config.COL_HH_RURAL
+    }
+
+    # Falchetta dataset
+    for col_type in [app_config.COL_TIERS_FALCHETTA_MAJ, app_config.COL_TIERS_FALCHETTA_MEAN]:
+        if col_type in grid_gdf.columns:
+            tiers_summary_df = pd.DataFrame()
+            for cat_name, total_hh_col in categories_summary.items():
+                 if total_hh_col in grid_gdf.columns and grid_gdf[total_hh_col].sum() > 0:
+                    cat_sum = grid_gdf.groupby(col_type)[total_hh_col].sum()
+                    tiers_summary_df[cat_name] = cat_sum / cat_sum.sum()
+            print(f"\nFalchetta Tiers Summary ({col_type}):")
+            print(tiers_summary_df.fillna(0))
+
+    # Our methods
+    methods_to_compare = {
+        'meth1': app_config.COL_RES_ELEC_PER_HH_LOG,
+        'meth2': app_config.COL_RES_ELEC_PER_HH_KWH_DHS
+    }
+    categories_for_comparison = [
+        ('national', app_config.COL_HH_WITH_ACCESS, app_config.COL_HH_WO_ACCESS, app_config.COL_HH_TOTAL),
+        ('urban', app_config.COL_HH_WITH_ACCESS_URB, app_config.COL_HH_WO_ACCESS_URB, app_config.COL_HH_URBAN),
+        ('rural', app_config.COL_HH_WITH_ACCESS_RUR, app_config.COL_HH_WO_ACCESS_RUR, app_config.COL_HH_RURAL)
+    ]
+
+    for method_key, energy_col_name in methods_to_compare.items():
+        if energy_col_name not in grid_gdf.columns:
+            print(f"Warning: Energy column '{energy_col_name}' for method '{method_key}' not found.")
+            continue
+
+        grid_gdf[f'tiers_{method_key}'] = pd.cut(grid_gdf[energy_col_name], bins=bins_tiers, labels=tier_labels, right=False)
+        grid_gdf[f'tiers_{method_key}'] = grid_gdf[f'tiers_{method_key}'].fillna(0).astype(int)
+
+        df_tiers_data = pd.DataFrame()
+        for cat_name, hh_access_col, hh_no_access_col, total_hh_col in categories_for_comparison:
+            if all(c in grid_gdf.columns for c in [hh_access_col, hh_no_access_col, total_hh_col]):
+                cat_total_val = grid_gdf[total_hh_col].sum()
+                if cat_total_val > 0:
+                    tier_share_series = calculate_tier_share_method(grid_gdf, method_key, hh_access_col, hh_no_access_col, cat_total_val)
+                    df_tiers_data[cat_name] = tier_share_series
+
+        print(f"\nTier Shares for Method '{method_key}':")
+        print(df_tiers_data.fillna(0))
+
+    if f'tiers_meth2' in grid_gdf.columns and app_config.COL_TIERS_FALCHETTA_MAJ in grid_gdf.columns:
+        grid_gdf['tiers_DHS_adjusted'] = grid_gdf['tiers_meth2'].where(grid_gdf['tiers_meth2'] != 5, 4)
+        grid_gdf['Similarity_Falchetta_DHS'] = grid_gdf['tiers_DHS_adjusted'] == grid_gdf[app_config.COL_TIERS_FALCHETTA_MAJ]
+        grid_gdf['Difference_Falchetta_DHS'] = abs(pd.to_numeric(grid_gdf['tiers_DHS_adjusted']) - pd.to_numeric(grid_gdf[app_config.COL_TIERS_FALCHETTA_MAJ]))
+
+        print("\nSimilarity Analysis (Falchetta vs DHS-Method2):")
+        print(f"Number of lines with similar tiers: {grid_gdf['Similarity_Falchetta_DHS'].sum()}")
+        print(f"Mean difference in tiers: {grid_gdf['Difference_Falchetta_DHS'].mean():.2f}")
+        print(f"Median difference in tiers: {grid_gdf['Difference_Falchetta_DHS'].median():.2f}")
+
+    print("Finished Falchetta comparison.")
+    return grid_gdf
