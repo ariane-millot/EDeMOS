@@ -81,13 +81,16 @@ def calc_energy_per_site(app_config):
     spec_energy["Copper"]["Diesel"]["Smelting"]["average"]= 0.6*8.9 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
     smelting_default = "Flash smelting"
     ### refining
-    spec_energy["Copper"]["Elec"]["Refining"]= 3.2*0.4 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-    spec_energy["Copper"]["Diesel"]["Refining"]= 3.2*0.6 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
+    spec_energy["Copper"]["Elec"]["Refining"]= 3.2*0.4 + 5.76 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
+                                                              # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
+    spec_energy["Copper"]["Diesel"]["Refining"]= 3.2*0.6  + 7.2 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
+                                                                # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
     
     ### leaching, solvent extraction and electrowinning
-    spec_energy["Copper"]["Elec"]["Hydrometallurgical"]= 14.7*0.85 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-    spec_energy["Copper"]["Diesel"]["Hydrometallurgical"]= 14.7*0.15 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-    
+    spec_energy["Copper"]["Elec"]["Hydrometallurgical"]= 14.7*0.85 + 5.76 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
+                                                                        # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
+    spec_energy["Copper"]["Diesel"]["Hydrometallurgical"]= 14.7*0.15 + 7.2 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
+                                                                    # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4 
     ### smelting, refining = processing
     spec_energy["Cobalt"]["Elec"]["Smelting/Refining"]= 13.57
     spec_energy["Cobalt"]["Diesel"]["Smelting/Refining"]= 0
