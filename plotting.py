@@ -7,6 +7,7 @@ import matplotlib.colors as colors
 from shapely.geometry.point import Point
 
 import geopandas as gpd
+import numpy as np
 
 
 def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_param, region_gdf_param, sector_name,
@@ -32,21 +33,34 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
     ax.set_xlabel('Longitude (°)')
     ax.set_ylabel('Latitude (°)')
 
-    v_max = grid_display[col_to_plot].max() if not grid_display[col_to_plot].empty else 1e6
-    # v_min = grid_display[col_to_plot].min() if not grid_display[col_to_plot].empty else 1e-3
-    # if v_min <= 0 : v_min = 1e-9
     # Create a series of only the positive values from the column
     positive_values = grid_display[col_to_plot][grid_display[col_to_plot] > 0]
-    # If there are any positive values, find the minimum. Otherwise, use a default small number.
-    v_min = positive_values.min() if not positive_values.empty else 1e-3
+    data_min = positive_values.min()
+    data_max = positive_values.max()
+
+    # --- Extend the normalization range to the nearest powers of 10 ---
+    # This ensures the colorbar has a clean, readable range (e.g., 10, 100, 1000)
+    log_min_power = np.floor(np.log10(data_min))
+    log_max_power = np.ceil(np.log10(data_max))
+
+    # Define the new vmin and vmax for the colormap normalization
+    norm_vmin = 10**log_min_power
+    norm_vmax = 10**log_max_power
+
+    # Generate ticks for every power of 10 in the new, extended range
+    ticks = [10**i for i in range(int(log_min_power), int(log_max_power) + 1)]
 
     grid_display.sort_values(col_to_plot, ascending=True).plot(
         ax=ax, column=col_to_plot, cmap="Reds", legend=True, alpha=0.9,
-        norm=colors.LogNorm(vmin=v_min, vmax=v_max),
-        legend_kwds={"label": sector_name + " Consumption (" + unit_label + " per cell)"})
+        norm=colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax),
+        legend_kwds={
+        "label": sector_name + " Consumption (" + unit_label + " per cell)",
+        "ticks": ticks,  # Use our manually created ticks
+        }
+    )
 
-    if admin_gdf_param is not None: admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='brown', facecolor='None', alpha=0.6)
-    if region_gdf_param is not None: region_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='brown', facecolor='None', alpha=0.2)
+    if admin_gdf_param is not None: admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='grey', facecolor='None', alpha=0.6)
+    if region_gdf_param is not None: region_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='grey', facecolor='None', alpha=0.2)
     if lines_gdf is not None:
         lines_gdf = lines_gdf.to_crs(admin_gdf_param.crs)
         lines_gdf = gpd.clip(lines_gdf, admin_gdf_param)
