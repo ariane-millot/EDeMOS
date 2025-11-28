@@ -11,7 +11,8 @@ import numpy as np
 
 
 def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_param, region_gdf_param, sector_name,
-                           lines_gdf=None, fig_size=(25, 15), title = True):
+                           lines_gdf=None, fig_size=(25, 15), title = True,
+                                plot_as_dots=False, dot_markersize=50):
     print(f"Plotting {sector_name} Consumption map...")
 
     if col_to_plot not in grid_gdf.columns:
@@ -50,14 +51,43 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
     # Generate ticks for every power of 10 in the new, extended range
     ticks = [10**i for i in range(int(log_min_power), int(log_max_power) + 1)]
 
-    grid_display.sort_values(col_to_plot, ascending=True).plot(
-        ax=ax, column=col_to_plot, cmap="Reds", legend=True, alpha=0.9,
-        norm=colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax),
-        legend_kwds={
-        "label": sector_name + " Consumption (" + unit_label + " per cell)",
-        "ticks": ticks,  # Use our manually created ticks
+    plot_kwargs = {
+        "ax": ax,
+        "column": col_to_plot,
+        "cmap": "Reds",
+        "legend": True,
+        "alpha": 0.9,
+        "norm": colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax),
+        "legend_kwds": {
+            "label": sector_name + " Consumption (" + unit_label + ")",
+            "ticks": ticks,
         }
-    )
+    }
+
+    # Sort to ensure highest values are plotted on top if there is overlap
+    sorted_grid = grid_display.sort_values(col_to_plot, ascending=True)
+
+    if plot_as_dots:
+        # Convert geometries to centroids for dot plotting
+        # Warning: We filter > 0 here to avoid plotting thousands of empty dots
+        dots_gdf = sorted_grid[sorted_grid[col_to_plot] > 0].copy()
+
+        # Use centroids. Note: specific warning suppression might be needed depending on CRS
+        dots_gdf['geometry'] = dots_gdf.geometry.centroid
+
+        dots_gdf.plot(markersize=dot_markersize, **plot_kwargs)
+    else:
+        # Standard grid map
+        sorted_grid.plot(**plot_kwargs)
+
+    # grid_display.sort_values(col_to_plot, ascending=True).plot(
+    #     ax=ax, column=col_to_plot, cmap="Reds", legend=True, alpha=0.9,
+    #     norm=colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax),
+    #     legend_kwds={
+    #     "label": sector_name + " Consumption (" + unit_label + " per cell)",
+    #     "ticks": ticks,  # Use our manually created ticks
+    #     }
+    # )
 
     if admin_gdf_param is not None: admin_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='grey', facecolor='None', alpha=0.6)
     if region_gdf_param is not None: region_gdf_param.to_crs(grid_gdf.crs).plot(ax=ax, edgecolor='grey', facecolor='None', alpha=0.2)
@@ -84,5 +114,6 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
     scalebar = ScaleBar(distance_meters, dimension="si-length", location='lower left', length_fraction=0.1, width_fraction=0.001, units='m', color='black')
     ax.add_artist(scalebar)
 
-    plt.savefig(app_config.OUTPUT_DIR / f'map_{sector_name}_demand_log_{app_config.COUNTRY}.png', bbox_inches='tight')
+    suffix = "_dots" if plot_as_dots else ""
+    plt.savefig(app_config.OUTPUT_DIR / f'map_{sector_name}_demand_log_{app_config.COUNTRY}{suffix}.png', bbox_inches='tight')
     # plt.show()
