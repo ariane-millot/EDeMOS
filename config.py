@@ -159,6 +159,7 @@ COL_BUI_ELEC_KWH_FINAL = 'bui_elec_kWh_final'
 # -----------------------------------------------------------------------------
 MINES_DATA_PATH = ROOT_DIR / "Industry/Data/mines"
 MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
+TOTAL_PROD_USGS_FILE = MINES_DATA_PATH / USGS_TABLE
 MINES_OUTPUT_GPKG = MINES_DATA_PATH / f"mineral_facilities_{COUNTRY.lower()}.gpkg"
 MINES_OUTPUT_CSV = MINES_DATA_PATH / f"mineral_facilities_{COUNTRY.lower()}.csv"
 COL_IND_ELEC_TJ = "ind_elec_TJ"
