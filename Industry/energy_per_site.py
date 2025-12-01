@@ -15,6 +15,76 @@ import fiona
 import config
 import specified_energy
 
+def get_usgs_production_targets(file_path, target_year):
+    """
+    Reads the USGS Excel file and extracts Ore and Metal production targets
+    for the specific year.
+    """
+    targets = {"Ore": 0, "Metal": 0}
+
+    # Helper to clean numbers (e.g., converts "655,500 r" to 655500.0)
+    def _clean_val(val):
+        if isinstance(val, (int, float)):
+            return float(val)
+        if isinstance(val, str):
+            # Remove everything except digits (removes commas, 'r', 'e', etc.)
+            clean_str = ''.join(filter(str.isdigit, val))
+            return float(clean_str) if clean_str else 0.0
+        return 0.0
+
+    try:
+        # Load Excel
+        df_usgs = pd.read_excel(file_path)
+
+        # Clean whitespace in string columns
+        df_usgs = df_usgs.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+        # 1. Find the column index for the target YEAR
+        year_col_idx = None
+        for col in df_usgs.columns:
+            # Check column headers and first few rows for the year
+            if str(target_year) in str(col) or df_usgs[col].astype(str).str.contains(str(target_year)).any():
+                year_col_idx = col
+                break
+
+        if year_col_idx is None:
+            print(f"Warning: Year {target_year} not found in USGS file. Using default 0.")
+            return targets
+
+        # 2. Locate Data Rows (Assume Commodity Name is in Column 0)
+        col_commodity = df_usgs.columns[0]
+
+        # --- A. Get Mine Concentrate (Ore) ---
+        mask_ore = df_usgs[col_commodity].astype(str).str.contains("Mine, concentrates, Cu content", case=False, na=False)
+        if mask_ore.any():
+            raw_val = df_usgs.loc[mask_ore, year_col_idx].values[0]
+            targets["Ore"] = _clean_val(raw_val)
+
+        # --- B. Get Smelter and Electrowon (Metal) ---
+        mask_smelter = df_usgs[col_commodity].astype(str).str.contains("Smelter, primary", case=False, na=False)
+        mask_electro = df_usgs[col_commodity].astype(str).str.contains("Electrowon", case=False, na=False)
+
+        val_smelter = 0
+        val_electro = 0
+
+        if mask_smelter.any():
+            raw_val = df_usgs.loc[mask_smelter, year_col_idx].values[0]
+            val_smelter = _clean_val(raw_val)
+
+        if mask_electro.any():
+            # Take the first occurrence (Primary)
+            raw_val = df_usgs.loc[mask_electro, year_col_idx].values[0]
+            val_electro = _clean_val(raw_val)
+
+        targets["Metal"] = val_smelter + val_electro
+
+        print(f"USGS Targets for {target_year} -> Ore: {targets['Ore']}, Metal: {targets['Metal']}")
+        return targets
+
+    except Exception as e:
+        print(f"Error reading USGS Excel: {e}. Falling back to defaults (0).")
+        return targets
+
 def calc_energy_per_site(app_config):
 
     #----------------------------------
@@ -59,31 +129,76 @@ def calc_energy_per_site(app_config):
     output_table["Output type (ass.)"] = output_type_list
     
     # Assess production level for each site
-    # clear production
-    production_2017 = []
-    for idx, production in enumerate(input_table["DsgAttr07"]):
-        metal = input_table["DsgAttr02"][idx]
+
+    # a. load usgs total
+    usgs_targets = get_usgs_production_targets(app_config.TOTAL_PROD_USGS_FILE, app_config.YEAR)
+
+    # b. clear production_capacity
+    production_capacities_2017 = []
+    for idx, production_capacity in enumerate(input_table["DsgAttr07"]):
+        # metal = input_table["DsgAttr02"][idx]
         unit_orig = input_table["DsgAttr08"][idx]
         
-        if production <0:
-            production = np.nan
+        if production_capacity <0:
+            production_capacity = np.nan
             print("Production at a site ", output_table["FeatureNam"][idx], " in ", country, " is missing (negative). Value set to zero. Please, change the input in the input file.")
         elif "Capacity is a combination" in output_table["MemoOther"][idx]:
             number = output_table["MemoOther"].tolist().count(output_table["MemoOther"][idx]) # how many plants are giving the combined capacity
-            production = production / number 
-        if output_table["Output type (ass.)"][idx]=="Metal":
-            plant_usage = plant_usage_metal[metal]
-        else:
-            plant_usage = plant_usage_ore[metal]
+            production_capacity = production_capacity / number
         try:
-            production_2017.append(production*plant_usage*unit_conversion[unit_orig]) 
+            production_capacity = production_capacity * unit_conversion[unit_orig]
         except:
-            production_2017.append(production*plant_usage) # original unit is sometimes nan
-    output_table["Production (ass.) 2019 [t]"] = production_2017
+            production_capacity = production_capacity # original unit is sometimes nan
+        production_capacities_2017.append(production_capacity)
+    output_table["production_capacity_modified"] = production_capacities_2017
+
+    # c. Compute Dynamic Plant Usage Factors
+    # Factor = Total_USGS_Production / Total_Input_Capacity
+
+    # Calculate Total Input Capacities for Copper
+    # Filter for Copper and specific output types
+    is_copper = output_table["DsgAttr02"] == "Copper"
+    is_ore = output_table["Output type (ass.)"] == "Ore and concentrate"
+    is_metal = output_table["Output type (ass.)"] == "Metal"
+
+    total_cap_ore = output_table.loc[is_copper & is_ore, "production_capacity_modified"].sum()
+    total_cap_metal = output_table.loc[is_copper & is_metal, "production_capacity_modified"].sum()
+
+    # Update the plant_usage dictionary for Copper
+    if usgs_targets["Ore"] > 0 and total_cap_ore > 0:
+        plant_usage_ore["Copper"] = usgs_targets["Ore"] / total_cap_ore
+        print(f"Calculated Copper Ore Usage Factor: {plant_usage_ore['Copper']:.4f}")
+
+    if usgs_targets["Metal"] > 0 and total_cap_metal > 0:
+        plant_usage_metal["Copper"] = usgs_targets["Metal"] / total_cap_metal
+        print(f"Calculated Copper Metal Usage Factor: {plant_usage_metal['Copper']:.4f}")
+
+    # 4. Final Calculation: Apply factors to individual rows
+    # Now we apply the (potentially updated) usage factors to the normalized capacity
+
+    final_production = []
+
+    for idx, row in output_table.iterrows():
+        metal = row["DsgAttr02"]
+        norm_cap = row["production_capacity_modified"]
+        output_type = row["Output type (ass.)"]
+
+        # Determine usage factor
+        if output_type == "Metal":
+            usage = plant_usage_metal.get(metal, 0)
+        else:
+            usage = plant_usage_ore.get(metal, 0)
+
+        # Calc
+        prod = norm_cap * usage
+        final_production.append(prod)
+
+    col_name_prod = f"Production_assessed_{app_config.YEAR}_[t]"
+    output_table[col_name_prod] = final_production
       
     # Production of copper content in kt
     metal_content_list = []
-    for idx, production in enumerate(output_table["Production (ass.) 2019 [t]"]):
+    for idx, production in enumerate(output_table[col_name_prod]):
         metal = input_table["DsgAttr02"][idx]
         
         if output_table["Output type (ass.)"][idx]=="Ore and concentrate":
