@@ -13,101 +13,33 @@ import numpy as np
 import geopandas as gpd
 import fiona
 import config
+import specified_energy
 
 def calc_energy_per_site(app_config):
-  
+
+    #----------------------------------
+    # settings
     country = app_config.COUNTRY
     metals = ["Copper", "Cobalt", "Gold", "Nickel", "Manganese"]
     electrowon_names = ["Slag Recovery","Heap Leach","Leach","Solvent Extraction-Electrowinning", "Electrowinning", "Solvent Extraction"]
-
-    input_table = pd.read_csv(app_config.MINES_INPUT_CSV)
-    input_table = input_table[input_table["Country"]==country]
-    input_table = input_table.loc[input_table["DsgAttr02"].isin(metals)].reset_index()
-    
-    #----------------------------------
-    # settings
     ## general
     plant_usage_ore = {"Copper": 0.773, "Cobalt":0, "Gold":0.853, "Nickel":0.285, "Manganese":0.942} # Co from mining not considered
     plant_usage_metal = {"Copper":  0.312, "Cobalt":0.136, "Gold":0.853, "Nickel":0, "Manganese":0.942} # no Ni metal production, no Au metal statistics, Mn ore and fero- or siliconmanganese statistics
     ore_grade = {"Copper":0.0103, "Cobalt":0} # cobalt from mining not considered
     concentrate_grade = 0.3
     unit_conversion = {"Thousand metric tons":10**3, "Metric tons":1, "Kilograms":10**-3} # into t
-    
-    ## energy usage for different processes and their types
-    ## Units: GJ/t_Cu
-    spec_energy = {"Copper": {"Elec": {"Mining":{}, "Smelting":{}}, "Diesel":{"Mining":{}, "Smelting":{}}},
-                   "Cobalt":{"Elec":{"Mining":{}}, "Diesel":{"Mining":{}}},
-                   "Gold":{"Elec":{"Mining":{}}, "Diesel":{"Mining":{}}},
-                   "Nickel":{"Elec":{"Mining":{}}, "Diesel":{"Mining":{}}},
-                   "Manganese":{"Elec":{"Mining":{}}, "Diesel":{"Mining":{}}}}
-    
-    ### mining
-    spec_energy["Copper"]["Elec"]["Mining"]["Open Pit"]= 0        # https://doi.org/10.1016/j.jclepro.2019.118978
-    spec_energy["Copper"]["Diesel"]["Mining"]["Open Pit"]= 10.2   # https://doi.org/10.1016/j.jclepro.2019.118978
-    spec_energy["Copper"]["Elec"]["Mining"]["Underground"]= 2.15  # https://doi.org/10.1016/j.jclepro.2019.118978
-    spec_energy["Copper"]["Diesel"]["Mining"]["Underground"]= 2.15 # https://doi.org/10.1016/j.jclepro.2019.118978
-    mining_default = "Underground"
-    spec_energy["Copper"]["Elec"]["Milling"] = 0.4*24 # weir engeco: Mining energy consumption 2021
-    spec_energy["Copper"]["Diesel"]["Milling"]= 0     # weir engeco: Mining energy consumption 2021
-    
-    spec_energy["Cobalt"]["Elec"]["Mining"][mining_default]= np.nan # placeholder
-    spec_energy["Cobalt"]["Diesel"]["Mining"][mining_default]= np.nan # placeholder
-    spec_energy["Cobalt"]["Elec"]["Milling"]= np.nan # placeholder
-    spec_energy["Cobalt"]["Diesel"]["Milling"]= np.nan # placeholder
-    
-    spec_energy["Gold"]["Elec"]["Mining"][mining_default]= (24.11*10**3)/2
-    spec_energy["Gold"]["Diesel"]["Mining"][mining_default]=(223.21+36.21)*10**3/2
-    spec_energy["Gold"]["Elec"]["Milling"]= (96.71+34.81)*10**3/2 
-    spec_energy["Gold"]["Diesel"]["Milling"]= 0
-    
-    spec_energy["Nickel"]["Elec"]["Mining"][mining_default]= 18       
-    spec_energy["Nickel"]["Diesel"]["Mining"][mining_default]=12.5
-    spec_energy["Nickel"]["Elec"]["Milling"]= 0       #Mining+Milling one value
-    spec_energy["Nickel"]["Diesel"]["Milling"]= 0  #Mining+Milling one value
-    
-    spec_energy["Manganese"]["Elec"]["Mining"][mining_default]= 0.025     
-    spec_energy["Manganese"]["Diesel"]["Mining"][mining_default]= 0.17
-    spec_energy["Manganese"]["Elec"]["Milling"]= 0    #Mining+Milling one value
-    spec_energy["Manganese"]["Diesel"]["Milling"]= 0  #Mining+Milling one value
-    
-    ### smelting
-    spec_energy["Copper"]["Elec"]["Smelting"]["Flash smelting"]= 9.266 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Diesel"]["Smelting"]["Flash smelting"]= 1.518 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Elec"]["Smelting"]["Isasmelt"]= 6.903 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Diesel"]["Smelting"]["Isasmelt"]= 4.175 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Elec"]["Smelting"]["Mitsubishi"]= 8.508 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Diesel"]["Smelting"]["Mitsubishi"]= 2.498 # https://link.springer.com/article/10.1007/s11837-015-1380-1
-    spec_energy["Copper"]["Elec"]["Smelting"]["average"]= 0.4*8.9 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-    spec_energy["Copper"]["Diesel"]["Smelting"]["average"]= 0.6*8.9 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-    smelting_default = "Flash smelting"
-    ### refining
-    spec_energy["Copper"]["Elec"]["Refining"]= 3.2*0.4 + 5.76 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-                                                              # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
-    spec_energy["Copper"]["Diesel"]["Refining"]= 3.2*0.6  + 7.2 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-                                                                # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
-    
-    ### leaching, solvent extraction and electrowinning
-    spec_energy["Copper"]["Elec"]["Hydrometallurgical"]= 14.7*0.85 + 5.76 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-                                                                        # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4
-    spec_energy["Copper"]["Diesel"]["Hydrometallurgical"]= 14.7*0.15 + 7.2 # https://elib.dlr.de/130069/1/Renewable%20energy%20in%20copper%20production%20-%20a%20review.pdf
-                                                                    # https://www.bmwk.de/Redaktion/DE/Downloads/E/energiewende-in-der-industrie-ap2a-branchensteckbrief-metall.pdf?__blob=publicationFile&v=4 
-    ### smelting, refining = processing
-    spec_energy["Cobalt"]["Elec"]["Smelting/Refining"]= 13.57
-    spec_energy["Cobalt"]["Diesel"]["Smelting/Refining"]= 0
-    
-    spec_energy["Gold"]["Elec"]["Smelting/Refining"]= (52.08+38.86)*10**3/2 # Asuming total energy = elec
-    spec_energy["Gold"]["Diesel"]["Smelting/Refining"]= 0
-    
-    spec_energy["Nickel"]["Elec"]["Smelting/Refining"]= 200 # Asuming total energy = elec
-    spec_energy["Nickel"]["Diesel"]["Smelting/Refining"]= 0
-    
-    spec_energy["Manganese"]["Elec"]["Smelting/Refining"]= 18.01
-    spec_energy["Manganese"]["Diesel"]["Smelting/Refining"]= 13.02
-    
-    #-----------------------------------
-    
+    spec_energy = specified_energy.SPEC_ENERGY
+    mining_default = specified_energy.MINING_DEFAULT
+    smelting_default = specified_energy.SMELTING_DEFAULT
+
+    #----------------------------------
+
+    ## Load USGS data
+    input_table = pd.read_csv(app_config.MINES_INPUT_CSV)
+    input_table = input_table[input_table["Country"]==country]
+    input_table = input_table.loc[input_table["DsgAttr02"].isin(metals)].reset_index()
     output_table = input_table[["Country", "FeatureNam", "DsgAttr02", "DsgAttr03", "DsgAttr06", "MemoOther", "MemoLoc","Latitude", "Longitude", "DsgAttr07", "DsgAttr08"]].copy()
-    
+
     # Create a list of all possible outputs and allocate Metal or Ore and concentrate to each process
     # clear output type
     output_type_list = []
