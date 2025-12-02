@@ -16,6 +16,27 @@ import openpyxl
 import config
 import specified_energy
 
+
+def load_known_production(file_path, target_year):
+    """
+    Loads specific mine production data from an external file.
+    Expected columns: 'FeatureNam', 'Year', 'Production'
+    Returns a dictionary: {'MineName': Production_Value}
+    """
+    known_map = {}
+    try:
+        df_add = pd.read_excel(file_path)
+        # Filter for the correct year
+        df_add = df_add[df_add["Year"] == target_year]
+        # Create dictionary
+        known_map = dict(zip(df_add["FeatureNam"], df_add["Production (t)"]))
+
+        print(f"Loaded {len(known_map)} known production values from Additional Info.")
+    except Exception as e:
+        print(f"Warning: Could not load Additional Info file ({e}). Proceeding without known values.")
+    return known_map
+
+
 def get_usgs_production_targets(file_path, target_year):
     """
     Reads the USGS Excel file and extracts Ore and Metal production targets
@@ -149,8 +170,14 @@ def calc_energy_per_site(app_config):
     
     # Assess production level for each site
 
-    # a. load usgs total
+    # a. load usgs total and known production values
     usgs_targets = get_usgs_production_targets(app_config.TOTAL_PROD_USGS_FILE, app_config.YEAR)
+    known_production_map = load_known_production(app_config.ADD_INFO_FILE, app_config.YEAR)
+
+    # We map these known values to the output table immediately
+    # If a mine is in the map, it gets a value; otherwise, it gets NaN
+    output_table["Known_Production_Tonnes"] = output_table["FeatureNam"].map(known_production_map)
+    # -------------------------------------------------------------------------
 
     # b. clear production_capacity
     production_capacities_2017 = []
@@ -180,17 +207,51 @@ def calc_energy_per_site(app_config):
     is_ore = output_table["Output type (ass.)"] == "Ore and concentrate"
     is_metal = output_table["Output type (ass.)"] == "Metal"
 
-    total_cap_ore = output_table.loc[is_copper & is_ore, "production_capacity_modified"].sum()
-    total_cap_metal = output_table.loc[is_copper & is_metal, "production_capacity_modified"].sum()
+    # Identify which rows have KNOWN values vs which rely on CAPACITY
+    # valid_cap: capacity is not nan
+    # is_unknown: we do NOT have a value in Additional_info
+    has_known_val = output_table["Known_Production_Tonnes"].notna()
+    is_unknown = output_table["Known_Production_Tonnes"].isna()
+
+    # 1. Calculate how much production is already accounted for by "Additional_info"
+    # We assume known values in Additional_info match the output type (Ore vs Metal) correctly implicitly
+    # (i.e. if a mine is an Ore mine, the value in Excel is Ore)
+
+    known_prod_ore = output_table.loc[is_copper & is_ore & has_known_val, "Known_Production_Tonnes"].sum()
+    known_prod_metal = output_table.loc[is_copper & is_metal & has_known_val, "Known_Production_Tonnes"].sum()
+
+    print(f"Known Production (Fixed) -> Ore: {known_prod_ore}, Metal: {known_prod_metal}")
+
+    # 2. Calculate the REMAINING USGS Target
+    # If known production exceeds USGS, we floor the remaining target at 0 to avoid negative factors
+    target_remaining_ore = max(0, usgs_targets["Ore"] - known_prod_ore)
+    target_remaining_metal = max(0, usgs_targets["Metal"] - known_prod_metal)
+
+    print(f"Remaining USGS Target -> Ore: {target_remaining_ore}, Metal: {target_remaining_metal}")
+
+    # 3. Calculate the Capacity of the UNKNOWN mines only
+    cap_remaining_ore = output_table.loc[is_copper & is_ore & is_unknown, "production_capacity_modified"].sum()
+    cap_remaining_metal = output_table.loc[is_copper & is_metal & is_unknown, "production_capacity_modified"].sum()
+
+    print(f"Remaining Capacity -> Ore: {cap_remaining_ore}, Metal: {cap_remaining_metal}")
+
+    # total_cap_ore = output_table.loc[is_copper & is_ore, "production_capacity_modified"].sum()
+    # total_cap_metal = output_table.loc[is_copper & is_metal, "production_capacity_modified"].sum()
 
     # Update the plant_usage dictionary for Copper
-    if usgs_targets["Ore"] > 0 and total_cap_ore > 0:
-        plant_usage_ore["Copper"] = usgs_targets["Ore"] / ore_grade["Copper"]/ total_cap_ore
-        print(f"Calculated Copper Ore Usage Factor: {plant_usage_ore['Copper']:.4f}")
+    if target_remaining_ore > 0 and cap_remaining_ore > 0:
+        plant_usage_ore["Copper"] = target_remaining_ore/ ore_grade["Copper"] / cap_remaining_ore
+        print(f"Calculated Copper Ore Usage Factor (Adjusted): {plant_usage_ore['Copper']:.4f}")
+    # if usgs_targets["Ore"] > 0 and total_cap_ore > 0:
+    #     plant_usage_ore["Copper"] = usgs_targets["Ore"] / ore_grade["Copper"]/ total_cap_ore
+    #     print(f"Calculated Copper Ore Usage Factor: {plant_usage_ore['Copper']:.4f}")
+    if target_remaining_metal > 0 and cap_remaining_metal > 0:
+        plant_usage_metal["Copper"] = target_remaining_metal / cap_remaining_metal
+        print(f"Calculated Copper Metal Usage Factor (Adjusted): {plant_usage_metal['Copper']:.4f}")
 
-    if usgs_targets["Metal"] > 0 and total_cap_metal > 0:
-        plant_usage_metal["Copper"] = usgs_targets["Metal"] / total_cap_metal
-        print(f"Calculated Copper Metal Usage Factor: {plant_usage_metal['Copper']:.4f}")
+    # if usgs_targets["Metal"] > 0 and total_cap_metal > 0:
+    #     plant_usage_metal["Copper"] = usgs_targets["Metal"] / total_cap_metal
+    #     print(f"Calculated Copper Metal Usage Factor: {plant_usage_metal['Copper']:.4f}")
 
     # 4. Final Calculation: Apply factors to individual rows
     # Now we apply the (potentially updated) usage factors to the normalized capacity
