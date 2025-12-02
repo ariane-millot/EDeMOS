@@ -12,6 +12,7 @@ import os
 import numpy as np
 import geopandas as gpd
 import fiona
+import openpyxl
 import config
 import specified_energy
 
@@ -34,17 +35,24 @@ def get_usgs_production_targets(file_path, target_year):
 
     try:
         # Load Excel
-        df_usgs = pd.read_excel(file_path)
+        df_usgs = pd.read_excel(file_path, sheet_name="Table 1", header=None)
 
         # Clean whitespace in string columns
-        df_usgs = df_usgs.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        df_usgs = df_usgs.map(lambda x: x.strip() if isinstance(x, str) else x)
 
         # 1. Find the column index for the target YEAR
         year_col_idx = None
-        for col in df_usgs.columns:
-            # Check column headers and first few rows for the year
-            if str(target_year) in str(col) or df_usgs[col].astype(str).str.contains(str(target_year)).any():
-                year_col_idx = col
+        # Search the first 10 rows and all columns
+        found_year = False
+        for r in range(min(15, len(df_usgs))): # Scan top 15 rows
+            for c in range(len(df_usgs.columns)):
+                cell_value = str(df_usgs.iloc[r, c])
+                # Check if 2019 is in the cell (e.g. "2019" or "2019 (estimated)")
+                if str(target_year) in cell_value:
+                    year_col_idx = c
+                    found_year = True
+                    break
+            if found_year:
                 break
 
         if year_col_idx is None:
@@ -56,25 +64,36 @@ def get_usgs_production_targets(file_path, target_year):
 
         # --- A. Get Mine Concentrate (Ore) ---
         mask_ore = df_usgs[col_commodity].astype(str).str.contains("Mine, concentrates, Cu content", case=False, na=False)
-        if mask_ore.any():
-            raw_val = df_usgs.loc[mask_ore, year_col_idx].values[0]
-            targets["Ore"] = _clean_val(raw_val)
-
-        # --- B. Get Smelter and Electrowon (Metal) ---
-        mask_smelter = df_usgs[col_commodity].astype(str).str.contains("Smelter, primary", case=False, na=False)
         mask_electro = df_usgs[col_commodity].astype(str).str.contains("Electrowon", case=False, na=False)
-
-        val_smelter = 0
+        val_concentrates = 0
         val_electro = 0
 
-        if mask_smelter.any():
-            raw_val = df_usgs.loc[mask_smelter, year_col_idx].values[0]
-            val_smelter = _clean_val(raw_val)
+        if mask_ore.any():
+            raw_val = df_usgs.loc[mask_ore, year_col_idx].values[0]
+            val_concentrates = _clean_val(raw_val)
 
         if mask_electro.any():
             # Take the first occurrence (Primary)
             raw_val = df_usgs.loc[mask_electro, year_col_idx].values[0]
             val_electro = _clean_val(raw_val)
+
+        targets["Ore"] = val_concentrates + val_electro
+
+        # --- B. Get Smelter and Electrowon (Metal) ---
+        mask_smelter = df_usgs[col_commodity].astype(str).str.contains("Smelter, primary", case=False, na=False)
+        # mask_electro = df_usgs[col_commodity].astype(str).str.contains("Electrowon", case=False, na=False)
+
+        val_smelter = 0
+        # val_electro = 0
+
+        if mask_smelter.any():
+            raw_val = df_usgs.loc[mask_smelter, year_col_idx].values[0]
+            val_smelter = _clean_val(raw_val)
+
+        # if mask_electro.any():
+        #     # Take the first occurrence (Primary)
+        #     raw_val = df_usgs.loc[mask_electro, year_col_idx].values[0]
+        #     val_electro = _clean_val(raw_val)
 
         targets["Metal"] = val_smelter + val_electro
 
@@ -166,7 +185,7 @@ def calc_energy_per_site(app_config):
 
     # Update the plant_usage dictionary for Copper
     if usgs_targets["Ore"] > 0 and total_cap_ore > 0:
-        plant_usage_ore["Copper"] = usgs_targets["Ore"] / total_cap_ore
+        plant_usage_ore["Copper"] = usgs_targets["Ore"] / ore_grade["Copper"]/ total_cap_ore
         print(f"Calculated Copper Ore Usage Factor: {plant_usage_ore['Copper']:.4f}")
 
     if usgs_targets["Metal"] > 0 and total_cap_metal > 0:
