@@ -72,8 +72,8 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         # Warning: We filter > 0 here to avoid plotting thousands of empty dots
         dots_gdf = sorted_grid[sorted_grid[col_to_plot] > 0].copy()
 
-        # Use centroids. Note: specific warning suppression might be needed depending on CRS
-        dots_gdf['geometry'] = dots_gdf.geometry.centroid
+        # Use centroids.
+        dots_gdf['geometry'] = dots_gdf.to_crs(epsg=3857).centroid.to_crs(dots_gdf.crs)
 
         dots_gdf.plot(markersize=dot_markersize, **plot_kwargs)
     else:
