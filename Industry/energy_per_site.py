@@ -30,7 +30,7 @@ def load_known_production(file_path, target_year):
         # Filter for the correct year
         df_add = df_add[df_add["Year"] == target_year]
         # Create dictionary
-        known_map = dict(zip(df_add["FeatureNam"], df_add["Production (t)"]))
+        known_map = dict(zip(df_add["FeatureNam"], df_add["Production (t_Cu)"]))
 
         print(f"Loaded {len(known_map)} known production values from Additional Info.")
     except Exception as e:
@@ -112,7 +112,7 @@ def get_usgs_production_targets(file_path, target_year):
 
         targets["Metal"] = val_smelter + val_electro
 
-        print(f"USGS Targets for {target_year} -> Ore: {targets['Ore']}, Metal: {targets['Metal']}")
+        print(f"USGS Targets for {target_year} -> Ore: {targets['Ore']:,.0f}, Metal: {targets['Metal']:,.0f}")
         return targets
 
     except Exception as e:
@@ -161,15 +161,23 @@ def calc_energy_per_site(app_config):
                 output_name = ""
         output_type_list.append(output_name)
     output_table["Output type (ass.)"] = output_type_list
-    
+
     # Assess production level for each site
 
     # a. load usgs total and known production values
     usgs_targets = get_usgs_production_targets(app_config.TOTAL_PROD_USGS_FILE, app_config.YEAR)
     known_production_map = load_known_production(app_config.ADD_INFO_FILE, app_config.YEAR)
-    # We map these known values to the output table immediately
-    # If a mine is in the map, it gets a value; otherwise, it gets NaN
-    output_table["Known_Production_Tonnes"] = output_table["FeatureNam"].map(known_production_map)
+
+    # Map the known values to the table based on FeatureNam
+    mapped_values = output_table["FeatureNam"].map(known_production_map)
+
+    # Assign to column ONLY if the commodity is Copper
+    # Logic: If DsgAttr02 is 'Copper', take the mapped value. Otherwise, set to NaN.
+    output_table["Known_Production_Tonnes"] = np.where(
+        output_table["DsgAttr02"] == "Copper",
+        mapped_values,
+        np.nan
+    )
     # -------------------------------------------------------------------------
 
     # b. clear production_capacity
@@ -213,20 +221,20 @@ def calc_energy_per_site(app_config):
     known_prod_ore = output_table.loc[is_copper & is_ore & has_known_val, "Known_Production_Tonnes"].sum()
     known_prod_metal = output_table.loc[is_copper & is_metal & has_known_val, "Known_Production_Tonnes"].sum()
 
-    print(f"Known Production (Fixed) -> Ore: {known_prod_ore}, Metal: {known_prod_metal}")
+    print(f"Known Production (Fixed) -> Ore: {known_prod_ore:,.0f} Metal: {known_prod_metal:,.0f}")
 
     # 2. Calculate the REMAINING USGS Target
     # If known production exceeds USGS, we floor the remaining target at 0 to avoid negative factors
     target_remaining_ore = max(0, usgs_targets["Ore"] - known_prod_ore)
     target_remaining_metal = max(0, usgs_targets["Metal"] - known_prod_metal)
 
-    print(f"Remaining USGS Target -> Ore: {target_remaining_ore}, Metal: {target_remaining_metal}")
+    print(f"Remaining USGS Target -> Ore: ", f"{target_remaining_ore:,.0f}"," Metal: ", f"{target_remaining_metal:,.0f}")
 
     # 3. Calculate the Capacity of the UNKNOWN mines only
     cap_remaining_ore = output_table.loc[is_copper & is_ore & is_unknown, "production_capacity_modified"].sum()
     cap_remaining_metal = output_table.loc[is_copper & is_metal & is_unknown, "production_capacity_modified"].sum()
 
-    print(f"Remaining Capacity -> Ore: {cap_remaining_ore}, Metal: {cap_remaining_metal}")
+    print(f"Remaining Capacity -> Ore: {cap_remaining_ore:,.0f}, Metal: {cap_remaining_metal:,.0f}")
 
     # Update the plant_usage dictionary for Copper
     if target_remaining_ore > 0 and cap_remaining_ore > 0:
@@ -246,15 +254,18 @@ def calc_energy_per_site(app_config):
         metal = row["DsgAttr02"]
         norm_cap = row["production_capacity_modified"]
         output_type = row["Output type (ass.)"]
+        known_val = row["Known_Production_Tonnes"]
+        # Check if there is a known production value (not NaN)
+        if metal == "Copper" and pd.notna(known_val):
+            prod = known_val/ore_grade[metal]
+        else:# Determine usage factor
+            if output_type == "Metal":
+                usage = plant_usage_metal.get(metal, 0)
+            else:
+                usage = plant_usage_ore.get(metal, 0)
+            # Calc
+            prod = norm_cap * usage
 
-        # Determine usage factor
-        if output_type == "Metal":
-            usage = plant_usage_metal.get(metal, 0)
-        else:
-            usage = plant_usage_ore.get(metal, 0)
-
-        # Calc
-        prod = norm_cap * usage
         final_production.append(prod)
 
     col_name_prod = f"Production_assessed_{app_config.YEAR}_[t]"
@@ -264,7 +275,11 @@ def calc_energy_per_site(app_config):
     metal_content_list = []
     for idx, production in enumerate(output_table[col_name_prod]):
         metal = input_table["DsgAttr02"][idx]
-        
+        # known_val = row["Known_Production_Tonnes"]
+        # # Check if there is a known production value (not NaN)
+        # if metal == "Copper" and pd.notna(known_val):
+        #     metal_content_list.append(known_val/1000)
+        # else:
         if output_table["Output type (ass.)"][idx]=="Ore and concentrate":
             metal_content_list.append(production*ore_grade[metal]/1000) # conversion in kt metal
         else:
