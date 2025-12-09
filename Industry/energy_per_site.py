@@ -15,6 +15,7 @@ import fiona
 import openpyxl
 import config
 import Industry.specified_energy as specified_energy
+# import specified_energy as specified_energy
 
 
 def load_known_production(file_path, target_year):
@@ -68,7 +69,7 @@ def get_usgs_production_targets(file_path, target_year):
         for r in range(min(15, len(df_usgs))): # Scan top 15 rows
             for c in range(len(df_usgs.columns)):
                 cell_value = str(df_usgs.iloc[r, c])
-                # Check if 2019 is in the cell (e.g. "2019" or "2019 (estimated)")
+                # Check if year is in the cell (e.g. "2019" or "2019 (estimated)")
                 if str(target_year) in cell_value:
                     year_col_idx = c
                     found_year = True
@@ -328,8 +329,10 @@ def calc_energy_per_site(app_config):
                                             +spec_energy[metal][en_carrier]["Milling"])
             
             elif element == "Metal":
-                if output_table["Metal processing"][idx] in ["Refining","Hydrometallurgical","Smelting/Refining"]:
+                if output_table["Metal processing"][idx] in ["Hydrometallurgical","Smelting/Refining"]:
                     spec_energy_list.append(spec_energy[metal][en_carrier][output_table["Metal processing"][idx]])
+                elif output_table["Metal processing"][idx] in ["Refinery"]:
+                    spec_energy_list.append(spec_energy[metal][en_carrier]["Refining"])
                 elif output_table["Metal processing"][idx]=="Smelter+Refinery":
                     spec_energy_list.append(spec_energy[metal][en_carrier]["Refining"]+spec_energy[metal][en_carrier]["Smelting"]["Flash smelting"])
                 else:
@@ -410,14 +413,10 @@ def calc_energy_per_site(app_config):
                 output_table.at[idx, "Elec_Step_Smelting_TJ"] = metal_kt * val_smelt
 
             elif proc == "Refinery":
-                # Maps to Smelting
-                val_ref = spec_energy[metal][en_carrier]["Smelting"][smelting_default]
-                output_table.at[idx, "Elec_Step_Smelting_TJ"] = metal_kt * val_ref
-
-            elif proc ==  "":
-                # Maps to Smelting
-                val_ref = spec_energy[metal][en_carrier]["Smelting"][smelting_default]
-                output_table.at[idx, "Elec_Step_Smelting_TJ"] = metal_kt * val_ref
+                # Maps to Refining
+                # val_ref = spec_energy[metal][en_carrier]["Smelting"][smelting_default]
+                val_ref = spec_energy[metal][en_carrier]["Refining"] #[smelting_default]
+                output_table.at[idx, "Elec_Step_Refining_TJ"] = metal_kt * val_ref
 
             elif proc == "Smelter+Refinery":
                 # Split: Smelting (assume Flash) + Refining
@@ -432,6 +431,11 @@ def calc_energy_per_site(app_config):
                 val_combined = spec_energy[metal][en_carrier]["Smelting/Refining"]
                 # We allocate this to Smelting for simplicity, or you could create a new 'Other_Process' col
                 output_table.at[idx, "Elec_Step_Smelting_TJ"] = metal_kt * val_combined
+
+            elif proc ==  "":
+                # Maps to Smelting
+                val_ref = spec_energy[metal][en_carrier]["Smelting"][smelting_default]
+                output_table.at[idx, "Elec_Step_Smelting_TJ"] = metal_kt * val_ref
 
     # =========================================================================
     # ---- END SECTION ----
