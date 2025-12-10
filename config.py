@@ -162,8 +162,8 @@ USGS_DATA_PATH = MINES_DATA_PATH / "Africa_GIS.gdb"
 USGS_DATA_OUTPUT_PATH = MINES_DATA_PATH / "Africa_GIS"
 # Ensure folder for USGS output files exist
 USGS_DATA_OUTPUT_PATH.mkdir(exist_ok=True)
-# MINES_INPUT_CSV = USGS_DATA_OUTPUT_PATH / "AFR_Mineral_Exploration.csv"
-MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
+MINES_INPUT_CSV = USGS_DATA_OUTPUT_PATH / "AFR_Mineral_Facilities.csv"
+# MINES_INPUT_CSV = MINES_DATA_PATH / "Mineral_Facilities_correctedInput.csv"
 TOTAL_PROD_USGS_FILE = MINES_DATA_PATH / USGS_TABLE
 ADD_INFO_FILE = MINES_DATA_PATH / "Additional_info.xlsx"
 COL_IND_ELEC_TJ = "ind_elec_TJ"
