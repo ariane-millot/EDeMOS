@@ -23,6 +23,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import importlib
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsRegressor
@@ -155,6 +156,26 @@ def calibrate_rwi_by_region(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, ap
     return grid_df
 
 
+def calibrate_rwi_country(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app_config) -> pd.DataFrame:
+    """Calibrates grid RWI against DHS cluster WI at the country level."""
+    print("\n--- 3. Calibrating Grid RWI - country level ---")
+    grid_df = grid_df.copy()
+    grid_df[app_config.COL_RWI_REGION_MODIFIED] = np.nan
+    # Prepare inputs for the calibration function
+    grid_series = grid_df[app_config.COL_RWI_MEAN]
+    grid_weights = grid_df[app_config.COL_HH_TOTAL]
+    target_series = clusters_df[AVG_WI]
+    target_weights = pd.Series(np.ones(len(clusters_df)), index=clusters_df.index) # uniform weights
+
+    # Apply mapping and update the main grid dataframe
+    calibrated_rwi = weighted_quantile_map(
+        grid_series, grid_weights, target_series, target_weights
+    )
+    grid_df[app_config.COL_RWI_REGION_MODIFIED] = calibrated_rwi
+
+    return grid_df
+
+
 def plot_rwi_distributions(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app_config):
     """Plots the distributions of original, calibrated, and target RWI."""
     print("\n--- Plotting RWI Distributions for Comparison ---")
@@ -170,7 +191,7 @@ def plot_rwi_distributions(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app
                 label='Target DHS Cluster WI', color='green', lw=3, linestyle='--')
 
     sns.kdeplot(data=grid_df, x=app_config.COL_RWI_REGION_MODIFIED, weights='pct_households',
-                label='Region-Calibrated Grid RWI (Weighted)', color='orange', lw=3)
+                label='Calibrated Grid RWI (Weighted)', color='orange', lw=3)
 
     plt.title('Comparison of wealth index distributions', fontsize=16)
     plt.xlabel('DHS Wealth Index / RWI')
@@ -248,6 +269,8 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     # Run the script to assess electricity consumption of households in the DHS dataset
     recalculate_energy_perhh = app_config.DHS_RECALCULATE_ENERGY_PERHH
     if recalculate_energy_perhh:
+        import Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS
+        importlib.reload(Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS)
         from Buildings.HouseholdEnergyUse.estimate_energy_perhh_DHS import compute_energy_perhh_dhs
         compute_energy_perhh_dhs(app_config, elas=app_config.DHS_ELAS, nominal_household_size=app_config.DHS_HH_SIZE)
 
@@ -266,7 +289,8 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     final_clusters_df = aggregate_dhs_to_clusters(dhs_data, app_config)
 
     # --- Step 3: Calibrate RWI in grid---
-    grid_gdf = calibrate_rwi_by_region(grid_gdf, final_clusters_df, app_config)
+    # grid_gdf = calibrate_rwi_by_region(grid_gdf, final_clusters_df, app_config)
+    grid_gdf = calibrate_rwi_country(grid_gdf, final_clusters_df, app_config)
 
     # Optional: Visualize the result of the calibration
     plot_rwi_distributions(grid_gdf, final_clusters_df, app_config)

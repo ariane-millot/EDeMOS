@@ -3,7 +3,7 @@
 import importlib
 
 # Select the active country by changing the string value below.
-ACTIVE_COUNTRY = "Zambia"  # Or "Kenya" "Zambia":
+ACTIVE_COUNTRY = "Uganda"  # Or "Kenya" "Zambia" "Uganda":
 
 if ACTIVE_COUNTRY == "Kenya":
     import config_Kenya
@@ -15,6 +15,11 @@ elif ACTIVE_COUNTRY == "Zambia":
     importlib.reload(config_Zambia)
     from config_Zambia import *
     print(f"INFO: Successfully loaded configuration for Zambia from config.py.")
+elif ACTIVE_COUNTRY == "Uganda":
+    import config_Uganda
+    importlib.reload(config_Uganda)
+    from config_Uganda import *
+    print(f"INFO: Successfully loaded configuration for Uganda from config.py.")
 else:
     raise ValueError(
         f"Unsupported country: '{ACTIVE_COUNTRY}'. "

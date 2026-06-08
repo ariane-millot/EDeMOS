@@ -304,8 +304,8 @@ def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
         urbanBuildings = grid_gdf[grid_gdf[app_config.COL_LOC_ASSESSED] == "urban"][app_config.COL_BUILDINGS_SUM].sum()
         ruralBuildings = grid_gdf[grid_gdf[app_config.COL_LOC_ASSESSED] == "rural"][app_config.COL_BUILDINGS_SUM].sum()
 
-        nat_HH_urban = data_HH['Urban'].iloc[0]
-        nat_HH_rural = data_HH['Rural'].iloc[0]
+        nat_HH_urban = data_HH['HH_urban'].iloc[0]
+        nat_HH_rural = data_HH['HH_rural'].iloc[0]
 
         shareResBui_urban = nat_HH_urban / (app_config.NB_OF_HH_PER_RES_BUILDING_URBAN * urbanBuildings) if urbanBuildings > 0 else 0
         shareResBui_rural = nat_HH_rural / (app_config.NB_OF_HH_PER_RES_BUILDING_RURAL * ruralBuildings) if ruralBuildings > 0 else 0
@@ -440,7 +440,8 @@ def estimate_hh_with_access(grid_gdf, app_config, data_HH, df_HH_buildings=None)
         df_sum = pd.DataFrame(df_sum).T.set_index(app_config.COL_ADMIN_NAME)
         df_HH_buildings = pd.concat([df_HH_buildings, df_sum])
 
-        output_csv_path = app_config.RESIDENTIAL_OUTPUT_DIR / "dataHH_region.csv"
+        filename = f"dataHH_region_{app_config.ACTIVE_COUNTRY}.csv"
+        output_csv_path = app_config.RESIDENTIAL_OUTPUT_DIR / filename
         df_HH_buildings.to_csv(output_csv_path, index=True)
         print(f"Regional HH summary saved to {output_csv_path}")
         print(df_HH_buildings[['accessRateHH','accessRateHH_urban','accessRateHH_rural']].tail())
