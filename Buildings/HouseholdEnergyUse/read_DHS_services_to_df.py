@@ -14,14 +14,19 @@ import pandas as pd
 # Check if we are running the notebook directly, if so move workspace to parent dir
 import sys
 import os
-currentdir = os.path.abspath(os.getcwd())
-if os.path.basename(currentdir) != 'EDeMOS':
-  sys.path.insert(0, os.path.dirname(currentdir))
-  os.chdir('..')
-  print(f'Move to {os.getcwd()}')
+# currentdir = os.path.abspath(os.getcwd())
+# if os.path.basename(currentdir) != 'EDeMOS':
+#   sys.path.insert(0, os.path.dirname(currentdir))
+#   os.chdir('..')
+#   print(f'Move to {os.getcwd()}')
+#
+# import config
 
-import config
-
+# Check if we are running the notebook directly, if so import config
+if __name__ == "__main__":
+    import sys
+    sys.path.insert(1, '../../')
+    import config
 
 # Choose the file
 filepath = config.DHS_FOLDER / f'{config.DHS_SERVICES_SURVEY_FILE }.DTA'
