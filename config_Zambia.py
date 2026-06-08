@@ -56,8 +56,6 @@ HREA_LIGHTING_TIF = f"{ISO_CODE}_set_lightscore_sy_2019.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
-# run the notebook Rasterize RWI.ipynb to generate rwi_map.tif
-RWI_MAP_TIF = f"rwi_map_{COUNTRY}.tif"
 RWI_FILE_CSV = f"{ISO_CODE.lower()}_relative_wealth_index.csv"
 
 # Falchetta Tiers file
