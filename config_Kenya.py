@@ -32,12 +32,19 @@ HEX_SIZE = 7 ## resolution info here https://h3geo.org/docs/core-library/restabl
 # BUFFER DISTANCE in meters.
 buffer_distance_meters = 1000 # This should be larger than half the diagonal of a hexagon
 
+
+# -----------------------------------------------------------------------------
+# INDUSTRY FILES
+# -----------------------------------------------------------------------------
+
+USGS_TABLE = "myb3-20-21-Kenya_-advrel.xlsx"
+
 # -----------------------------------------------------------------------------
 # RESIDENTIAL FILES
 # -----------------------------------------------------------------------------
 
 # WorldPop files
-# Link: https://apps.worldpop.org/peanutButter/
+# Link: https://apps.worldpop.org/peanutButter/ https://apps.worldpop.org/connect/#/welcome
 WP_BUILDINGS_COUNT_TIF = f"{ISO_CODE}_buildings_v1_1_count.tif"
 WP_BUILDINGS_URBAN_TIF = f"{ISO_CODE}_buildings_v1_1_urban.tif"
 WP_POPULATION_TIF =f"{ISO_CODE}_population_2022_v2_0_gridded_total.tif"
@@ -50,8 +57,6 @@ HREA_LIGHTING_TIF = f"{ISO_CODE}_set_lightscore_2019.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
-# run the notebook Rasterize RWI.ipynb to generate rwi_map.tif
-RWI_MAP_TIF = f"rwi_map_{COUNTRY}.tif"
 RWI_FILE_CSV = f"{ISO_CODE.lower()}_relative_wealth_index.csv"
 
 # Falchetta Tiers file
@@ -70,7 +75,9 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
 MV_LINES_SHP = "Transmission lines 132kV/132kV.shp"
-HV_LINES_SHP = "Transmission lines 220kV/220kV.shp"
+# HV_LINES_SHP = "Transmission lines 220kV/220kV.shp"
+# HV_LINES_SHP = "kenya-electricity-transmission-network/Kenya Electricity Transmission Network.shp"
+HV_LINES_SHP = "all_merged_subfolders.shp"
 
 # Census data files
 # The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
@@ -176,13 +183,14 @@ UN_ENERGY_YEAR = YEAR
 # -----------------------------------------------------------------------------
 
 # Residential demand parameters
-THRESHOLD_ELEC_ACCESS_URBAN = 0.9
-THRESHOLD_ELEC_ACCESS_RURAL = 0.1
+THRESHOLD_ELEC_ACCESS_URBAN = 0
+THRESHOLD_ELEC_ACCESS_RURAL = 0
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 1 # For HHwithAccess_urb calculation
+# Parameters below used to determine residential buildings but doesn't affect households numbers
 NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
 NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 1.0 # For HHwithAccess_urb calculation
 
 # Residential energy per HH - Method 1 (Logistic RWI)
 LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
@@ -195,6 +203,8 @@ LOGISTIC_K_INITIAL_GUESS = 5.0
 # DHS Data parameters
 DHS_ELEC_KWH_ASSESSED_SURVEY = 'electricity_cons_kWh'
 DHS_RECALCULATE_ENERGY_PERHH = True
+DHS_ELAS = 0.4
+DHS_HH_SIZE = 4
 DHS_EMPLOYMENT_CATEGORIES = ['professional/technical/managerial', 'clerical', 'sales', 'services', 'skilled manual']
 DHS_WORKING_AGE_GROUP_KEY = '15-49'
 
