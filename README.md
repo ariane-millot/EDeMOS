@@ -1,5 +1,7 @@
 # EDeMOS (Electricity Demand Mapping from Open-Source data)
 <pre>
+EDeMOS aims to produce a high resolution map of electricity demand consumption in low- and middle-income countries.
+This material has been produced with support from the Climate Compatible Growth (CCG) programme.
 </pre>
 
 ## Workflow steps
@@ -23,11 +25,12 @@ Set the variable ACTIVE_COUNTRY in [config.py](config.py).
 As required for the specific country (see below). Files need to be named and put in folders to match the paths given in the [config.py](config.py) and config_{Country}.py
 
 ### 4. Run data conversion scripts
-- [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py)
-- [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) 
+- [read_DHS_hh_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_hh_to_df.py) extracts DHS data for households
+- [read_DHS_services_to_df.py](Buildings/HouseholdEnergyUse/read_DHS_services_to_df.py) extracts DHS data for services
 (select appropriate labels in config file)
 - [USGS_extract_data.py] (Industry/USGS_extract_data.py)
 NB: For Zambia, adjust in the AFR_Mineral_Facilities.csv file the value for DsgAttr07/Nchanga Copper Smelter/Cobalt to 3000 as indicated in MemoOther
+- Optional: [transform_nc_to_tiff.py] (Buildings/transform_nc_to_tiff.py) crops Falchetta dataset to the country
 
 ### 5. Adjust census data
 In the census data file, the following colummns should be available: HH urban, rural, total, size of HH (urban and rural) and share women
@@ -49,6 +52,9 @@ Then run
 jupyter lab
 ```
 You can then access the different scripts and run [GeoDem.ipynb](GeoDem.ipynb)
+
+### 8. Adjust analysis parameters
+Depending on the results and in-country data source, some analysis parameters can be adjusted in config_COUNTRY file
 
 ## Datasets to download
 
