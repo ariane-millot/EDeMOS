@@ -18,6 +18,27 @@ def compute_energy_perhh_dhs(app_config, elas=0.4,nominal_household_size=4):
     data = read_csv(app_config.DHS_HOUSEHOLD_DATA_CSV)
     number_hh = data.shape[0]
     print('Read data on', number_hh, 'survey households')
+
+    # Synthesize or initialize any missing appliances required by the appliance matrix
+    for app in appliance:
+        if app not in data.columns:
+            if app == 'Air conditioner / Water heater':
+                print("Deriving synthetic 'Air conditioner / Water heater' bundle for highest-wealth households...")
+                has_elec = (data['Electricity'] == 1) if 'Electricity' in data.columns else False
+                is_richest = (data['Wealth index combined'].astype(str).str.lower() == 'richest') if 'Wealth index combined' in data.columns else False
+                has_fridge = (data['Refrigerator'] == 1) if 'Refrigerator' in data.columns else False
+                has_micro = (data['Microwave'] == 1) if 'Microwave' in data.columns else False
+                has_comp = (data['Computer'] == 1) if 'Computer' in data.columns else False
+                has_car = (data['Has car/truck'].astype(str).str.lower() == 'yes') if 'Has car/truck' in data.columns else False
+
+                data['Air conditioner / Water heater'] = (
+                    has_elec & is_richest & has_fridge & (has_micro | has_comp | has_car)
+                ).astype(int)
+                print(f"Allocated synthetic bundle to {data['Air conditioner / Water heater'].sum()} high-wealth households.")
+            else:
+                print(f"Warning: Appliance '{app}' not found in survey data. Initializing to 0.")
+                data[app] = 0
+
     # Read columns into 2d array on appliance usage
     appliance_use = data[appliance].to_numpy(int)
     household_size = data['Number of household members']
@@ -26,7 +47,7 @@ def compute_energy_perhh_dhs(app_config, elas=0.4,nominal_household_size=4):
     energy_use = np.zeros(number_hh)
 
     # Create array to give the mapping between appliance usage and tier
-    tier = np.array([0, 0, 0, 1, 2, 2, 2, 3, 4])
+    tier = getattr(app_config, 'TIER', np.array([0, 0, 0, 1, 2, 2, 2, 3, 4]))
 
     # Create filter to avoid including houses that don't even have electricity
     has_electricity = appliance_use[:, 0] > 0
