@@ -18,8 +18,8 @@ YEAR = 2019 # year of analysis
 # COORDINATE REFERENCE SYSTEMS
 # -----------------------------------------------------------------------------
 CRS_WGS84 = CRS("EPSG:4326") # Original WGS84 coordinate system
-CRS_PROJ = CRS("EPSG:32736") # Projection system for the selected country - see http://epsg.io/ for more info
-TARGET_CRS_METERS = "EPSG:32735" # Used for grid line buffering (UTM Zone 35S)
+CRS_PROJ = CRS("EPSG:32737") # Projection system for Kenya (UTM Zone 37S)
+TARGET_CRS_METERS = "EPSG:32737" # Used for grid line buffering (UTM Zone 37S)
 
 # -----------------------------------------------------------------------------
 # PARAMETERS - HEXAGONS
@@ -37,7 +37,7 @@ buffer_distance_meters = 1000 # This should be larger than half the diagonal of 
 # INDUSTRY FILES
 # -----------------------------------------------------------------------------
 
-USGS_TABLE = "myb3-20-21-Kenya_-advrel.xlsx"
+USGS_TABLE = "myb3-2020-21-Kenya_-advrel.xlsx"
 
 # -----------------------------------------------------------------------------
 # RESIDENTIAL FILES
@@ -169,7 +169,8 @@ DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Region"
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
-TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # modified: Kenya has no washing machine and no air conditioner labels
+TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4]) #  modified: Kenya has no washing machine and no air conditioner labels
+# Electricity, Mobile, Radio, CD player, DVD player, TV, Computer, Microwave, Refrigerator, Air conditioner / Water heater
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -183,21 +184,19 @@ UN_ENERGY_YEAR = YEAR
 # -----------------------------------------------------------------------------
 
 # Residential demand parameters
-THRESHOLD_ELEC_ACCESS_URBAN = 0
-THRESHOLD_ELEC_ACCESS_RURAL = 0
+THRESHOLD_ELEC_ACCESS_URBAN = 0.5
+THRESHOLD_ELEC_ACCESS_RURAL = 0.25
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 1 # For HHwithAccess_urb calculation
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.85 # For HHwithAccess_urb calculation (calibrated to Census 2019)
 # Parameters below used to determine residential buildings but doesn't affect households numbers
 NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
 NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
 
 # Residential energy per HH - Method 1 (Logistic RWI)
 LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
-LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest tier
-# alpha = E_threshold / 0.1 - 1. This implies a specific low energy value.
-# To get E_HH = 7kWh when rwi_norm is low (exp term ~1), E_threshold / (1+alpha) = 7.
-# For now, will keep E_threshold and how alpha is derived from it.
+LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 7.0 # set so that E_HH = 7kWh for lowest tier
+# alpha = E_threshold / 7.0 - 1. This gives E_HH = 7kWh when rwi_norm is 0.
 LOGISTIC_K_INITIAL_GUESS = 5.0
 
 # DHS Data parameters
