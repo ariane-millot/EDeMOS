@@ -197,8 +197,9 @@ def plot_rwi_distributions(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app
     plt.xlabel('DHS Wealth Index / RWI')
     plt.ylabel('Density')
     plt.legend()
-    # plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.show()
+    fig_path = app_config.FIGURES_DHS_FOLDER / f'rwi_distributions_{app_config.COUNTRY}.png'
+    plt.savefig(fig_path, bbox_inches='tight')
+    plt.close()
 
 
 def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app_config, k_neighbors: int) -> pd.DataFrame:
