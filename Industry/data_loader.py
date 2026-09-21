@@ -66,9 +66,12 @@ def load_and_process_energy_balance(app_config):
             'OBS_VALUE'
         ]
         if not val.empty:
-            return pd.to_numeric(val.str.replace(',', '').iloc[0])
+            raw_val = val.iloc[0]
+            if isinstance(raw_val, str):
+                raw_val = raw_val.replace(',', '')
+            return float(raw_val)
         print(f"Warning: No energy value found for {commodity_code}, {transaction_code}, {year}. Returning 0.")
-        return 0 # Return 0 if no value found to avoid errors
+        return 0.0 # Return 0 if no value found to avoid errors
 
     energy_data = {
         'elec_nonFerrousMetals_TJ': get_energy_value(eb, code_elec, code_ind_nFM),
