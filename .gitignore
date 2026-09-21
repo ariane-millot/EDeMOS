@@ -9,6 +9,7 @@ Buildings/cache
 Buildings/__pycache__
 Buildings/Data/*
 !Buildings/Data/appliance_energy_use.csv
+!Buildings/Data/appliance_energy_use_Kenya.csv
 Buildings/Figures/*
 Buildings/Archives/*
 Buildings/Outputs/*
