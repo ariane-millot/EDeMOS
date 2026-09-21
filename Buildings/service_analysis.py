@@ -167,13 +167,15 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
     def calculate_working_gender(row, sex_col_name, employee_data_df, employee_share_col_name):
         loc_status = row[app_config.COL_LOC_ASSESSED]
         # Normalize the region name to match the index in the employee data
-        admin_name_processed = row[app_config.COL_ADMIN_NAME].lower().replace('-', ' ')
+        admin_name_raw = row[app_config.COL_ADMIN_NAME].lower()
+        admin_name_spaced = admin_name_raw.replace('-', ' ')
 
-        try:
-            # Look up the working share from the pre-loaded employee data
-            percent_working = employee_data_df.loc[(admin_name_processed, loc_status), employee_share_col_name] / 100
-        except KeyError:
-            # If a specific region/location combo is missing, default to 0 to avoid errors
+        # Try raw name (hyphenated), then space-separated name
+        if (admin_name_raw, loc_status) in employee_data_df.index:
+            percent_working = employee_data_df.loc[(admin_name_raw, loc_status), employee_share_col_name] / 100
+        elif (admin_name_spaced, loc_status) in employee_data_df.index:
+            percent_working = employee_data_df.loc[(admin_name_spaced, loc_status), employee_share_col_name] / 100
+        else:
             percent_working = 0
 
         return row[sex_col_name] * percent_working
