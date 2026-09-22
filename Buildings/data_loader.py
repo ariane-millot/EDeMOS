@@ -508,7 +508,10 @@ def load_census_data(app_config):
         # National census data
         national_census_path = os.path.join(app_config.RESIDENTIAL_DATA_PATH, app_config.CENSUS_NATIONAL_CSV)
         df_censusdata = pd.read_csv(national_census_path)
-        data_HH = df_censusdata[['HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural']]
+        for c in ['HH_urban', 'HH_rural', 'size_HH_urban', 'size_HH_rural']:
+            if c in df_censusdata.columns and df_censusdata[c].dtype == object:
+                df_censusdata[c] = df_censusdata[c].astype(str).str.replace(',', '').astype(float)
+        data_HH = df_censusdata[['HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural']].astype(float)
         print(f"National census data loaded: {df_censusdata.shape}")
     df_censusdata.set_index('region', inplace=True)
     # return df_censusdata, data_HH
