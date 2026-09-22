@@ -1,12 +1,12 @@
 Min. annual consumption (kWh),,,,,
 Appliance,Tier 1,Tier 2,Tier 3,Tier 4,Tier 5
-Electricity,9,225,500,1315,1250
+Electricity,9,120,200,300,450
 Mobile telephone,2,6,13,18,18
 Radio,2,6,3,3,3
 CD player,0,10,15,20,20
 DVD player,0,15,25,30,30
-Television,0,29,73,128,183
-Computer,0,0,58,73,88
-Microwave,0,0,37,55,91
-Refrigerator,0,0,0,807,1445
-Air conditioner / Water heater,0,0,0,0,2000
+Television,0,25,45,60,80
+Computer,0,0,50,65,80
+Microwave,0,0,35,50,75
+Refrigerator,0,0,0,420,850
+Air conditioner / Water heater,0,0,0,0,1600
