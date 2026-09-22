@@ -16,7 +16,7 @@ def plot_buildings_map(grid_gdf, app_config, fig_size=(15, 10)):
     ax.set_aspect('equal', 'box')
     ax.set_title(f'Buildings in {app_config.AREA_OF_INTEREST}')
     plt.savefig(app_config.RESIDENTIAL_OUTPUT_DIR / f'map_buildings_{app_config.COUNTRY}.png', bbox_inches='tight')
-    plt.show()
+    plt.close()
 
 def plot_hrea_map(grid_gdf, app_config, fig_size=(15, 10)):
     print("Plotting HREA map...")
@@ -34,7 +34,7 @@ def plot_hrea_map(grid_gdf, app_config, fig_size=(15, 10)):
     ax.set_aspect('equal', 'box')
     ax.set_title(f'HREA in {app_config.AREA_OF_INTEREST}')
     plt.savefig(app_config.RESIDENTIAL_OUTPUT_DIR / f'map_hrea_{app_config.COUNTRY}.png', bbox_inches='tight')
-    plt.show()
+    plt.close()
 
 def plot_urban_rural_map(grid_gdf, app_config, fig_size=(15, 10)):
     print("Plotting Urban/Rural map...")
@@ -45,7 +45,7 @@ def plot_urban_rural_map(grid_gdf, app_config, fig_size=(15, 10)):
         ax.set_aspect('equal', 'box')
         ax.set_title(f'Urban and Rural Areas (WorldPop) in {app_config.AREA_OF_INTEREST}')
         plt.savefig(app_config.RESIDENTIAL_OUTPUT_DIR / f'map_urban_rural{app_config.COUNTRY}.png', bbox_inches='tight')
-        plt.show()
+        plt.close()
     else:
         print(f"Warning: Column '{app_config.COL_LOC_ASSESSED}' not found for Urban/Rural map.")
 
