@@ -371,7 +371,7 @@ def load_rwi_data(grid_gdf, app_config):
     ax.set_title('Mean RWI per Hexagon (with Nearest Neighbor Fill)', fontdict={'fontsize': '16', 'fontweight': '3'})
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
-    plt.show()
+    plt.close()
 
     investigation=False
     if investigation == True:
@@ -419,7 +419,7 @@ def load_rwi_data(grid_gdf, app_config):
             ax.set_xlabel('Longitude')
             ax.set_ylabel('Latitude')
             plt.legend()
-            plt.show()
+            plt.close()
 
         else:
             print("No unjoined points were found.")
