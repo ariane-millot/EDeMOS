@@ -233,8 +233,9 @@ def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFra
         features = [AVG_WI, ACCESS_RATE]
         target = AVG_ELEC_CONNECTED
 
-        X_train = cluster_subset[features]
-        y_train = cluster_subset[target]
+        valid_mask = cluster_subset[target].notna() & cluster_subset[features].notna().all(axis=1)
+        X_train = cluster_subset.loc[valid_mask, features]
+        y_train = cluster_subset.loc[valid_mask, target]
 
         # Normalize features
         scaler = StandardScaler()
@@ -282,7 +283,7 @@ def estimate_electricity_rwi_link(grid_gdf, app_config):
     # Scale raw values and create standard columns
     dhs_data[WI_COMBINED] = 1e-5 * dhs_data[app_config.DHS_WEALTH_INDEX]
     dhs_data[WEIGHT] = 1e-6 * dhs_data[app_config.DHS_WEIGHT]
-    dhs_data[HAS_ACCESS] = dhs_data[app_config.DHS_ELEC_ACCESS].astype(int)
+    dhs_data[HAS_ACCESS] = dhs_data[app_config.DHS_ELEC_ACCESS].fillna(0).astype(int)
 
     print(f"Loaded {len(dhs_data)} household records.")
 
