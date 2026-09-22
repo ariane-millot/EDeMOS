@@ -37,20 +37,31 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
 
     # Create a series of only the positive values from the column
     positive_values = grid_display[col_to_plot][grid_display[col_to_plot] > 0]
-    data_min = positive_values.min()
-    data_max = positive_values.max()
+    if positive_values.empty:
+        print(f"Notice: No positive values found in '{col_to_plot}' for {sector_name}. Plotting zero/baseline map.")
+        norm = None
+        legend_kwds = {"label": sector_name + " Consumption (" + unit_label + ")"}
+    else:
+        data_min = positive_values.min()
+        data_max = positive_values.max()
 
-    # --- Extend the normalization range to the nearest powers of 10 ---
-    # This ensures the colorbar has a clean, readable range (e.g., 10, 100, 1000)
-    log_min_power = np.floor(np.log10(data_min))
-    log_max_power = np.ceil(np.log10(data_max))
+        # --- Extend the normalization range to the nearest powers of 10 ---
+        # This ensures the colorbar has a clean, readable range (e.g., 10, 100, 1000)
+        log_min_power = np.floor(np.log10(data_min))
+        log_max_power = np.ceil(np.log10(data_max))
 
-    # Define the new vmin and vmax for the colormap normalization
-    norm_vmin = 10**log_min_power
-    norm_vmax = 10**log_max_power
+        # Define the new vmin and vmax for the colormap normalization
+        norm_vmin = 10**log_min_power
+        norm_vmax = 10**log_max_power
 
-    # Generate ticks for every power of 10 in the new, extended range
-    ticks = [10**i for i in range(int(log_min_power), int(log_max_power) + 1)]
+        # Generate ticks for every power of 10 in the new, extended range
+        ticks = [10**i for i in range(int(log_min_power), int(log_max_power) + 1)]
+
+        norm = colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax)
+        legend_kwds = {
+            "label": sector_name + " Consumption (" + unit_label + ")",
+            "ticks": ticks,
+        }
 
     plot_kwargs = {
         "ax": ax,
@@ -58,11 +69,8 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         "cmap": "Reds",
         "legend": True,
         "alpha": 0.9,
-        "norm": colors.LogNorm(vmin=norm_vmin, vmax=norm_vmax),
-        "legend_kwds": {
-            "label": sector_name + " Consumption (" + unit_label + ")",
-            "ticks": ticks,
-        }
+        "norm": norm,
+        "legend_kwds": legend_kwds
     }
 
     # Sort to ensure highest values are plotted on top if there is overlap
