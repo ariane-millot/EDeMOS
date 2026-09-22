@@ -113,6 +113,11 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
     print("Calculating services energy (employee-based)...")
 
     # Load data
+    if getattr(app_config, 'SERVICES_WEIGHT_EMPLOYEES', 1.0) == 0.0:
+        print("SERVICES_WEIGHT_EMPLOYEES is 0. Skipping employee-based service energy calculation.")
+        grid_gdf[app_config.COL_SER_ELEC_KWH_EMP] = 0.0
+        return grid_gdf
+
     try:
         data_employee_women, data_employee_men, data_workingpop_share = _load_dhs_employee_data(app_config)
     except FileNotFoundError as e:
@@ -144,15 +149,29 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
         hh_total = row[app_config.COL_HH_TOTAL]
 
         # Get HH size for the specific location type (urban/rural)
-        hh_size = df_censusdata_local.loc[admin_name, f"size_HH_{loc_status}"]
+        if admin_name in df_censusdata_local.index:
+            census_row = df_censusdata_local.loc[admin_name]
+        elif 'National' in df_censusdata_local.index:
+            census_row = df_censusdata_local.loc['National']
+        elif 'Total' in df_censusdata_local.index:
+            census_row = df_censusdata_local.loc['Total']
+        else:
+            census_row = df_censusdata_local.iloc[0]
+
+        hh_size = float(census_row[f"size_HH_{loc_status}"])
+        share_women_raw = census_row['Share women']
+        if isinstance(share_women_raw, str) and '%' in share_women_raw:
+            share_women = float(share_women_raw.replace('%', '')) / 100.0
+        else:
+            share_women = float(share_women_raw)
 
         # Determine sex share and working pop share based on gender_type
         if gender_type == 'women':
-            regional_sex_share = df_censusdata_local.loc[admin_name, 'Share women']
-            working_age_pop_share = data_workingpop_share.loc[('Female', loc_status), '15-49'] / 100
+            regional_sex_share = share_women
+            working_age_pop_share = float(data_workingpop_share.loc[('Female', loc_status), '15-49']) / 100.0
         elif gender_type == 'men':
-            regional_sex_share = 1 - df_censusdata_local.loc[admin_name, 'Share women']
-            working_age_pop_share = data_workingpop_share.loc[('Male', loc_status), '15-49'] / 100
+            regional_sex_share = 1.0 - share_women
+            working_age_pop_share = float(data_workingpop_share.loc[('Male', loc_status), '15-49']) / 100.0
         else:
             raise ValueError('Unknown gender_type', gender_type)
 
@@ -172,11 +191,18 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
 
         # Try raw name (hyphenated), then space-separated name
         if (admin_name_raw, loc_status) in employee_data_df.index:
-            percent_working = employee_data_df.loc[(admin_name_raw, loc_status), employee_share_col_name] / 100
+            val = employee_data_df.loc[(admin_name_raw, loc_status), employee_share_col_name]
+            percent_working = float(val.iloc[0] if isinstance(val, pd.Series) else val) / 100.0
         elif (admin_name_spaced, loc_status) in employee_data_df.index:
-            percent_working = employee_data_df.loc[(admin_name_spaced, loc_status), employee_share_col_name] / 100
+            val = employee_data_df.loc[(admin_name_spaced, loc_status), employee_share_col_name]
+            percent_working = float(val.iloc[0] if isinstance(val, pd.Series) else val) / 100.0
         else:
-            percent_working = 0
+            # Fallback to mean for this location status if region is not explicitly in index
+            loc_matches = [idx for idx in employee_data_df.index if idx[1] == loc_status]
+            if loc_matches:
+                percent_working = float(employee_data_df.loc[loc_matches, employee_share_col_name].astype(float).mean()) / 100.0
+            else:
+                percent_working = 0.0
 
         return row[sex_col_name] * percent_working
 
@@ -186,8 +212,7 @@ def calculate_employee_based_electricity(grid_gdf, app_config, total_services_el
 
     # Sum up totals
     grid_gdf[app_config.COL_TOTAL_EMPLOYEE] = grid_gdf['nb_women_working'] + grid_gdf['nb_men_working']
-    grid_gdf[app_config.COL_TOTAL_EMPLOYEE_WITH_ACCESS] = grid_gdf.loc[grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec', app_config.COL_TOTAL_EMPLOYEE]
-    grid_gdf[app_config.COL_TOTAL_EMPLOYEE_WITH_ACCESS].fillna(0, inplace=True) # Ensure non-elec rows are 0, not NaN
+    grid_gdf[app_config.COL_TOTAL_EMPLOYEE_WITH_ACCESS] = grid_gdf[app_config.COL_TOTAL_EMPLOYEE].where(grid_gdf[app_config.COL_STATUS_ELECTRIFIED] == 'elec', 0)
 
     total_employee_national_with_access = grid_gdf[app_config.COL_TOTAL_EMPLOYEE_WITH_ACCESS].sum()
     print(f"Total employees with access: {total_employee_national_with_access:,.0f}")
