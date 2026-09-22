@@ -165,8 +165,8 @@ DHS_ELEC_ACCESS = "Electricity"
 DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Region"
 
-APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
-TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4]) # 10 appliances matching appliance_energy_use_Kenya.csv
+APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Uganda.csv'
+TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # 7 appliances: Tier 1 (Elec, Mobile, Radio), Tier 2 (TV), Tier 3 (Computer), Tier 4 (Fridge), Tier 5 (AC/Water heater)
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
