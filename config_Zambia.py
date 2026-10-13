@@ -164,7 +164,7 @@ DHS_PROVINCE = "Province"
 
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use.csv'
-TIER = np.array([0, 0, 0, 1, 2, 2, 3, 4])
+TIER = np.array([0, 0, 0, 1, 2, 2, 2, 3, 4]) # 9 appliances matching appliance_energy_use.csv
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -189,7 +189,7 @@ NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
 
 # Residential energy per HH - Method 1 (Logistic RWI)
 LOGISTIC_E_THRESHOLD = 4656 # kWh, adjust to country
-LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 0.1 # set so that E_HH = 7kWh for lowest tier
+LOGISTIC_ALPHA_DERIVATION_THRESHOLD = 7.0 # set so that E_HH = 7kWh for lowest tier
 # alpha = E_threshold / 0.1 - 1. This implies a specific low energy value.
 # To get E_HH = 7kWh when rwi_norm is low (exp term ~1), E_threshold / (1+alpha) = 7.
 # For now, will keep E_threshold and how alpha is derived from it.
