@@ -9,62 +9,77 @@ Script to read DHS household data and export it into a .csv
 
 from pandas import read_fwf
 import pandas as pd
+from pathlib import Path
 
-# Check if we are running the notebook directly, if so import config
+
+def read_dhs_hh_to_df(app_config=None):
+    """
+    Reads DHS household survey data and exports selected columns to CSV.
+    """
+    if app_config is None:
+        import config
+        app_config = config
+
+    # Choose the file
+    filepath = Path(app_config.DHS_FOLDER) / f'{app_config.DHS_HH_SURVEY_FILE}.DTA'
+    namefilepath = Path(app_config.DHS_FOLDER) / f'{app_config.DHS_HH_SURVEY_FILE}.DO'
+
+    # When labels are repeated, use the method below https://stackoverflow.com/questions/31782283/loading-stata-file-categorial-values-must-be-unique
+    with pd.io.stata.StataReader(filepath) as sr:
+        value_labels = sr.value_labels()
+
+    df = pd.read_stata(
+        filepath,
+        convert_categoricals=False,
+    )
+
+    # Use if you want to read the text version of the data
+    # print(value_labels)
+    for col in value_labels:
+        if col.lower() in df.columns:
+            df[col.lower()] = df[col.lower()].replace(value_labels[col])
+
+    # select labels from the .do file (see config)
+    df = df[app_config.labels_hh]
+    # Read the names of the columns from the .DO file and convert to dictionary
+    do = read_fwf(namefilepath, skiprows=2, encoding='latin-1')
+    col_dict = dict(zip(do['hhid'], do['"Case Identification"']))
+    print(list(col_dict.items())[:5])  # Show the first 5 items
+
+    # Rename the columns
+    df_hh = df.rename(columns=col_dict)
+
+    # Strip double quotes and any leading or trailing whitespace from the column names
+    df_hh.columns = df_hh.columns.str.replace('"', '').str.strip()
+
+    # Define the columns we want to change and what their new names will be.
+    old_to_new_names = app_config.DHS_SURVEY_HH_old_to_new_names
+
+    # Get a list of the columns we need to modify (the ones with 'yes'/'no')
+    columns_to_change = list(old_to_new_names.keys())
+
+    # Check which of these columns actually exist in the DataFrame
+    columns_to_change_existing = [col for col in columns_to_change if col in df_hh.columns]
+
+    # Replace yes no by numerical values
+    replacement_map = {'yes': 1, 'no': 0, 'Yes': 1, 'No': 0}
+    df_hh[columns_to_change_existing] = df_hh[columns_to_change_existing].replace(replacement_map)
+
+    # Rename the columns to their shorter names
+    df_hh = df_hh.rename(columns=old_to_new_names)
+
+    print(df_hh.head())
+    # Write the data for useful columns only in .csv format
+    output_csv = Path(app_config.DHS_HOUSEHOLD_DATA_CSV)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    df_hh.to_csv(output_csv, index=False)
+    print(f"Household survey data written to {output_csv}")
+    return df_hh
+
+
 if __name__ == "__main__":
     import sys
     sys.path.insert(1, '../../')
     import config
+    read_dhs_hh_to_df(config)
 
-
-# Choose the file
-filepath = config.DHS_FOLDER / f'{config.DHS_HH_SURVEY_FILE}.DTA'
-namefilepath = config.DHS_FOLDER / f'{config.DHS_HH_SURVEY_FILE}.DO'
-
-# When labels are repeated, use the method below https://stackoverflow.com/questions/31782283/loading-stata-file-categorial-values-must-be-unique
-with pd.io.stata.StataReader(filepath) as sr:
-    value_labels = sr.value_labels()
-
-df = pd.read_stata(
-    filepath,
-    convert_categoricals=False,
-)
-
-# Use if you want to read the text version of the data
-# print(value_labels)
-for col in value_labels:
-    if col.lower() in df.columns:
-        df[col.lower()] = df[col.lower()].replace(value_labels[col])
-
-# select labels from the .do file (see config)
-df = df[config.labels_hh]
-# Read the names of the columns from the .DO file and convert to dictionary
-do = read_fwf(namefilepath, skiprows=2, encoding='latin-1')
-col_dict = dict(zip(do['hhid'], do['"Case Identification"']))
-print(list(col_dict.items())[:5] )# Show the first 5 items)
-
-# Rename the columns
-df_hh = df.rename(columns=col_dict)
-
-# Strip double quotes and any leading or trailing whitespace from the column names
-df_hh.columns = df_hh.columns.str.replace('"', '').str.strip()
-
-# Define the columns we want to change and what their new names will be.
-old_to_new_names = config.DHS_SURVEY_HH_old_to_new_names
-
-# Get a list of the columns we need to modify (the ones with 'yes'/'no')
-columns_to_change = list(old_to_new_names.keys())
-
-# Check which of these columns actually exist in the DataFrame
-columns_to_change_existing = [col for col in columns_to_change if col in df_hh.columns]
-
-# Replace yes no by numerical values
-replacement_map = {'yes': 1, 'no': 0, 'Yes': 1, 'No': 0}
-df_hh[columns_to_change_existing] = df_hh[columns_to_change_existing].replace(replacement_map)
-
-# Rename the columns to their shorter names
-df_hh = df_hh.rename(columns=old_to_new_names)
-
-print(df_hh.head())
-# Write the data for useful columns only in .csv format
-df_hh.to_csv(config.DHS_FOLDER / config.DHS_HOUSEHOLD_DATA_CSV)
