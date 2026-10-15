@@ -55,8 +55,8 @@ def calculate_service_gdp_based_elec(grid_gdf, app_config, total_services_elec_g
     """
     print("Calculating services energy (GDP-based)...")
 
-    gdp_col = app_config.COL_GDP_PPP_MEAN
-    col_ser_en_gdp = app_config.COL_SER_ELEC_KWH_GDP
+    gdp_col = getattr(app_config, 'COL_GDP_PPP_MEAN', None)
+    col_ser_en_gdp = getattr(app_config, 'COL_SER_ELEC_KWH_GDP', 'Ser_elec_kWh_GDP')
 
     if gdp_col and gdp_col in grid_gdf.columns:
         total_gdp_kdollars = grid_gdf[gdp_col].sum() / 1000
