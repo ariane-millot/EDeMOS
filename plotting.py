@@ -116,10 +116,14 @@ def plot_sector_consumption_map(grid_gdf, col_to_plot, app_config, admin_gdf_par
         ax.set_title(f'{sector_name} Electricity Consumption in {region_title} ({unit_label})')
 
     # Scalebar
-    points = gpd.GeoSeries([Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=app_config.CRS_WGS84)  # Geographic WGS 84 - degrees
-    points = points.to_crs(32619)  # Projected WGS 84 - meters
-    distance_meters = points[0].distance(points[1])
-    # distance_meters = points.iloc[0].distance(points.iloc[1])
+    ref_gdf = admin_gdf_param if admin_gdf_param is not None else grid_gdf
+    ref_wgs84 = ref_gdf.to_crs(app_config.CRS_WGS84)
+    minx, miny, maxx, maxy = ref_wgs84.total_bounds
+    center_lon = (minx + maxx) / 2.0
+    center_lat = (miny + maxy) / 2.0
+    points = gpd.GeoSeries([Point(center_lon, center_lat), Point(center_lon + 1.0, center_lat)], crs=app_config.CRS_WGS84)
+    points = points.to_crs(app_config.CRS_PROJ)
+    distance_meters = points.iloc[0].distance(points.iloc[1])
     scalebar = ScaleBar(distance_meters, dimension="si-length", location='lower left', length_fraction=0.1, width_fraction=0.001, units='m', color='black')
     ax.add_artist(scalebar)
 
@@ -193,7 +197,7 @@ def plot_mining_process_breakdown(app_config):
 
     # Add a donut hole (optional, looks modern)
     centre_circle = plt.Circle((0,0),0.70,fc='white')
-    fig.gca().add_artist(centre_circle)
+    ax.add_artist(centre_circle)
 
     # 6. Add Legend and Title
     ax.legend(wedges, labels,
