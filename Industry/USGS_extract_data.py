@@ -36,8 +36,9 @@ def gdb_to_csv(gdb_path, output_folder):
 
     print("Conversion complete.")
 
-# --- Usage ---
-gdb_file = config.USGS_DATA_PATH
-out_dir = config.USGS_DATA_OUTPUT_PATH
+if __name__ == '__main__':
+    # --- Usage ---
+    gdb_file = config.USGS_DATA_PATH
+    out_dir = config.USGS_DATA_OUTPUT_PATH
 
-gdb_to_csv(gdb_file, out_dir)
+    gdb_to_csv(gdb_file, out_dir)
