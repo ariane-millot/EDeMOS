@@ -87,39 +87,49 @@ def convert_features_to_geodataframe(features, crs):
     return gdf
 
 
-def spatialjoinvectors(column, admin, crs, clusters, val, filepath=None, str=None):
+def spatialjoinvectors(column, admin, crs, clusters, val, filepath=None, convert_str_to_float=False):
+    """
+    Spatially joins point/vector data with polygon clusters (e.g. H3 hexagons),
+    aggregates by 'sum' or 'mean', and merges the result into the clusters GeoDataFrame.
+
+    Args:
+        column (str): Attribute column to aggregate.
+        admin (gpd.GeoDataFrame): Boundary polygon for clipping.
+        crs: Coordinate Reference System to reproject the vector points to.
+        clusters (gpd.GeoDataFrame): Polygon grid (must contain an 'id' column).
+        val (str): Aggregation operation, 'sum' or 'mean'.
+        filepath (str or Path): Path to the point/vector dataset.
+        convert_str_to_float (bool): If True, strips commas from the column and converts to float.
+
+    Returns:
+        tuple: (clusters, points)
+    """
     if not filepath:
         raise ValueError("Filepath for spatialjoinvectors cannot be None or empty.")    
-    # points=gpd.read_file(filedialog.askopenfilename(filetypes = (("shapefile","*.shp"),("all files","*.*"))))
-    # points=gpd.read_file(filedialog.askopenfilename(filetypes = (("all files","*.*"),)))
-    points=gpd.read_file(filepath)
-    points.head(5)
-    
+
+    points = gpd.read_file(filepath)
     points_clip = gpd.clip(points, admin)
 
-    try:
-        if points_clip.crs != config.CRS_WGS84:
-            raise KeyError(
-                f"Coordinate Reference System (CRS) mismatch: "
-                f"Expected '{config.CRS}', but got '{points.crs}'."
-            )
+    if points_clip.crs != config.CRS_WGS84:
+        print(f"Warning: Coordinate Reference System (CRS) mismatch: Expected '{config.CRS_WGS84}', but got '{points_clip.crs}'.")
+    else:
         print("CRS matched successfully for points_correct.")
-    except KeyError as e:
-        print(f"Error: {e}")
 
-    # points_clip.crs = config.CRS_WGS84
-    points_proj=points_clip.to_crs(crs)
-    if str:
-        points_proj[column] = points_proj[column].str.replace(',', '')
-        points_proj[column] = points_proj[column].astype(float)     ## added so that the sample mining productions works; you may need to update this as per layer used
+    points_proj = points_clip.to_crs(crs)
+    if convert_str_to_float:
+        points_proj[column] = points_proj[column].astype(str).str.replace(',', '').astype(float)
     
     gdf_points = points_proj[[column, "geometry"]]
     pointsInPolygon = gpd.sjoin(gdf_points, clusters, how="inner", predicate='within')
+
     ## Defining operation on the selected data
-    if val=="sum":
+    if val == "sum":
         group_by_name = pointsInPolygon[["id", column]].groupby(["id"]).sum().reset_index()
-    elif val=="mean":
+    elif val == "mean":
         group_by_name = pointsInPolygon[["id", column]].groupby(["id"]).mean().reset_index()
-    clusters = pd.merge(clusters, group_by_name[['id', column]], on='id', how = 'left')
+    else:
+        raise ValueError(f"Unsupported aggregation operation '{val}'. Expected 'sum' or 'mean'.")
+
+    clusters = pd.merge(clusters, group_by_name[['id', column]], on='id', how='left')
     
     return clusters, points
