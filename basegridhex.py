@@ -90,9 +90,12 @@ else:
         # see https://geopandas.org/en/latest/gallery/matplotlib_scalebar.html#Geographic-coordinate-system-(degrees)
         assert admin_gdf.crs == config.CRS_WGS84
         from shapely.geometry.point import Point
-        points = gpd.GeoSeries([Point(-73.5, 40.5), Point(-74.5, 40.5)], crs=4326)
-        points = points.to_crs(32619)
-        distance_meters = points[0].distance(points[1])
+        minx, miny, maxx, maxy = admin_gdf.total_bounds
+        center_lon = (minx + maxx) / 2.0
+        center_lat = (miny + maxy) / 2.0
+        points = gpd.GeoSeries([Point(center_lon, center_lat), Point(center_lon + 1.0, center_lat)], crs=config.CRS_WGS84)
+        points = points.to_crs(config.CRS_PROJ)
+        distance_meters = points.iloc[0].distance(points.iloc[1])
         scalebar = ScaleBar(distance_meters, dimension="si-length", location='lower left', length_fraction=0.1, width_fraction=0.001, units='m', color='black')
         ax.add_artist(scalebar)
         plt.savefig(config.OUTPUT_DIR / f'admin_level_basemap_{config.COUNTRY}.png', bbox_inches='tight')
