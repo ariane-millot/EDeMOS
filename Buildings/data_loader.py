@@ -241,7 +241,7 @@ def extract_pop_raster_data(grid_gdf, app_config, processing_raster_func, conver
     print(grid_gdf.crs)
     # Column renaming based on how processing_raster forms column names (prefix + method)
     rename_map = {
-        f"population{DEFAULT_RASTER_METHOD_BUILDINGS}": app_config.COL_POPULATION_WP,
+        f"population{DEFAULT_RASTER_METHOD_POP}": app_config.COL_POPULATION_WP,
     }
 
     # Filter out renames for columns not actually present
@@ -288,8 +288,10 @@ def load_rwi_data(grid_gdf, app_config):
     if grid_gdf.crs != rwi_gdf.crs:
         print(f"Original hexagon CRS: {grid_gdf.crs}")
         print(f"RWI points CRS: {rwi_gdf.crs}")
-        print("CRS do not match! Error in the workflow!")
-        exit()
+        raise ValueError(
+            f"Coordinate Reference System (CRS) mismatch: "
+            f"Original hexagon CRS is {grid_gdf.crs}, but RWI points CRS is {rwi_gdf.crs}."
+        )
 
     # --- 4. STEP 1: STANDARD SPATIAL JOIN (for points inside hexagons) ---
     print("Step 1: Performing standard spatial join for points inside hexagons...")
@@ -318,8 +320,7 @@ def load_rwi_data(grid_gdf, app_config):
             how="left"
         )
     else:
-        print("No RWI points were found within any hexagons. Cannot aggregate.")
-        exit()
+        raise ValueError("No RWI points were found within any hexagons. Cannot aggregate.")
 
     num_empty = hex_grid_with_rwi['rwi_mean'].isna().sum()
     print(f"Step 1 Complete. {num_empty} hexagons are still empty.")
