@@ -35,6 +35,20 @@ def compute_energy_perhh_dhs(app_config, elas=0.4,nominal_household_size=4):
                     has_elec & is_richest & has_fridge & (has_micro | has_comp | has_car)
                 ).astype(int)
                 print(f"Allocated synthetic bundle to {data['Air conditioner / Water heater'].sum()} high-wealth households.")
+            elif app == 'Electric stove':
+                print("Deriving 'Electric stove' from Type of cooking fuel...")
+                has_elec = (data['Electricity'] == 1) if 'Electricity' in data.columns else False
+                has_cook_elec = (data['Type of cooking fuel'].astype(str).str.lower() == 'electricity') if 'Type of cooking fuel' in data.columns else False
+                data['Electric stove'] = (has_elec & has_cook_elec).astype(int)
+                print(f"Allocated 'Electric stove' to {data['Electric stove'].sum()} households.")
+            elif app == 'Water heater':
+                print("Deriving synthetic 'Water heater' for urban high-wealth households with piped water...")
+                has_elec = (data['Electricity'] == 1) if 'Electricity' in data.columns else False
+                is_urban = (data['Type of place of residence'].astype(str).str.lower() == 'urban') if 'Type of place of residence' in data.columns else False
+                is_wealthy = (data['Wealth index combined'].astype(str).str.lower().isin(['richest', 'richer'])) if 'Wealth index combined' in data.columns else False
+                has_piped = (data['Source of drinking water'].astype(str).str.lower().str.contains('piped')) if 'Source of drinking water' in data.columns else False
+                data['Water heater'] = (has_elec & is_urban & is_wealthy & has_piped).astype(int)
+                print(f"Allocated synthetic 'Water heater' to {data['Water heater'].sum()} urban households.")
             else:
                 print(f"Warning: Appliance '{app}' not found in survey data. Initializing to 0.")
                 data[app] = 0
