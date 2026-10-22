@@ -169,7 +169,7 @@ DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Region"
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
-TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4]) #  modified: Kenya has no washing machine and no air conditioner labels
+TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4, 0]) # 11 appliances matching appliance_energy_use_Kenya.csv
 # Electricity, Mobile, Radio, CD player, DVD player, TV, Computer, Microwave, Refrigerator, Air conditioner / Water heater
 
 # -----------------------------------------------------------------------------
