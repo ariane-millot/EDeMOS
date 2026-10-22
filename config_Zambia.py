@@ -163,8 +163,8 @@ DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Province"
 
 
-APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use.csv'
-TIER = np.array([0, 0, 0, 1, 2, 2, 2, 3, 4]) # 9 appliances matching appliance_energy_use.csv
+APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Zambia.csv'
+TIER = np.array([0, 0, 0, 1, 2, 2, 2, 3, 0, 4, 4]) # 11 appliances matching appliance_energy_use_Zambia.csv
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
