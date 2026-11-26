@@ -124,6 +124,7 @@ DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 # label variable sh121k   "Air conditioner"
 # label variable sh121l   "Generator"
 # label variable sh121m   "Microwave"
+# label variable sh121n   "Geyser (water heater)"
 #label variable hv270       "Wealth index combined"
 #label variable hv270a      "Wealth index for urban/rural"
 #label variable hv271       "Wealth index factor score combined (5 decimals)"
@@ -134,7 +135,7 @@ DHS_SERVICES_SURVEY_FILE = 'ZMIR71DT/ZMIR71FL'
 # label variable hv212    "Has car/truck"
 # label variable hv226    "Type of cooking fuel"
 labels_hh = ['hv001', 'hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
-             'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m',
+             'hv243e', 'sh121f', 'sh121j', 'sh121k', 'sh121l', 'sh121m', 'sh121n',
              'hv270', 'hv270a', 'hv271', 'hv271a',
              'hv201', 'hv205', 'hv211', 'hv212', 'hv226',
              ]
@@ -152,6 +153,7 @@ DHS_SURVEY_HH_old_to_new_names = {
     "Air conditioner": "Air conditioner",
     "Generator": "Generator",
     "Microwave": "Microwave",
+    "Geyser (water heater)": "Geyser",
 }
 
 # DHS Input Columns
@@ -164,7 +166,7 @@ DHS_PROVINCE = "Province"
 
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Zambia.csv'
-TIER = np.array([0, 0, 0, 1, 2, 2, 2, 3, 0, 4, 4]) # 11 appliances matching appliance_energy_use_Zambia.csv
+TIER = np.array([0, 0, 0, 1, 2, 2, 2, 3, 4, 4, 4]) # 11 appliances matching appliance_energy_use_Zambia.csv (Electric stove & Geyser = Tier 5)
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -179,7 +181,7 @@ UN_ENERGY_YEAR = YEAR
 
 # Residential demand parameters
 THRESHOLD_ELEC_ACCESS_URBAN = 0.9
-THRESHOLD_ELEC_ACCESS_RURAL = 0.3
+THRESHOLD_ELEC_ACCESS_RURAL = 0.9 # Calibrated to NEAS 2023 Grid (7.6% rural, 34.0% nat) & DHS 2018 (8.4% rural, 34.2% nat)
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
 CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.75 #0.75 # For HHwithAccess_urb calculation
