@@ -139,7 +139,7 @@ DHS_SERVICES_SURVEY_FILE = 'KEIR8CDT/KEIR8CFL'
 labels_hh = ['hv001', 'hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
              'hv243e', 'sh132n', 'sh132o', 'sh132p',
              'hv270', 'hv270a', 'hv271', 'hv271a',
-             'hv201', 'hv205', 'hv211', 'hv212', 'hv223',
+             'hv201', 'hv205', 'hv211', 'hv212', 'hv226',
              ]
 
 # Define the columns we want to change in the DHS data and what their new names will be.
@@ -169,8 +169,8 @@ DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Region"
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Kenya.csv'
-TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4, 0]) # 11 appliances matching appliance_energy_use_Kenya.csv
-# Electricity, Mobile, Radio, CD player, DVD player, TV, Computer, Microwave, Refrigerator, Air conditioner / Water heater
+TIER = np.array([0, 0, 0, 1, 1, 1, 2, 2, 3, 4]) # 10 appliances matching appliance_energy_use_Kenya.csv (Electric stove = Tier 5)
+# Electricity, Mobile, Radio, CD player, DVD player, TV, Computer, Microwave, Refrigerator, Electric stove
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -185,10 +185,11 @@ UN_ENERGY_YEAR = YEAR
 
 # Residential demand parameters
 THRESHOLD_ELEC_ACCESS_URBAN = 0.5
-THRESHOLD_ELEC_ACCESS_RURAL = 0.25
+THRESHOLD_ELEC_ACCESS_RURAL = 0.4
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
-CORRECTION_FACTOR_URBAN_HH_ACCESS = 0.85 # For HHwithAccess_urb calculation (calibrated to Census 2019)
+CORRECTION_FACTOR_URBAN_HH_ACCESS = 1 # For HHwithAccess_urb calculation (calibrated to Census 2019 KNBS Volume 4:
+# 50.4% national, 26.3 rural and 88.4 urban)
 # Parameters below used to determine residential buildings but doesn't affect households numbers
 NB_OF_HH_PER_RES_BUILDING_URBAN = 1.1 # to update depending on the country
 NB_OF_HH_PER_RES_BUILDING_RURAL = 1.0
