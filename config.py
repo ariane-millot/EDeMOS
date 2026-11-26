@@ -3,7 +3,7 @@
 import importlib
 
 # Select the active country by changing the string value below.
-ACTIVE_COUNTRY = "Uganda"  # Or "Kenya" "Zambia" "Uganda":
+ACTIVE_COUNTRY = "Zambia"  # Or "Kenya" "Zambia" "Uganda":
 
 if ACTIVE_COUNTRY == "Kenya":
     import config_Kenya
@@ -77,8 +77,10 @@ UN_OIL_CODE = "B03_OP"
 UN_HH_TRANSACTION_CODE = "B50_1231"
 UN_SERVICES_TRANSACTION_CODE = "B49_1235"
 UN_OTHER_TRANSACTION_CODE = "B51_1234" # Other consumption not elsewhere specified
-UN_INDUSTRY_NFM = "B29_1214a"
-UN_INDUSTRY_MINING = "B33_1214e"
+if "UN_INDUSTRY_NFM" not in globals():
+    UN_INDUSTRY_NFM = "B29_1214a"
+if "UN_INDUSTRY_MINING" not in globals():
+    UN_INDUSTRY_MINING = "B33_1214e"
 
 # -----------------------------------------------------------------------------
 # PARAMETERS - ADMIN
