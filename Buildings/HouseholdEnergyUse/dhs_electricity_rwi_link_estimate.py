@@ -32,11 +32,21 @@ from sklearn.neighbors import KNeighborsRegressor
 # DHS Derived Columns
 WI_COMBINED = 'wi_combined'
 WEIGHT = 'weight'
+CLUSTER_WEIGHT = 'cluster_weight'
 HAS_ACCESS = 'has_access'
 AVG_WI = 'avg_wi'
 ACCESS_RATE = 'access_rate'
 NUM_HH = 'num_hh'
 AVG_ELEC_CONNECTED = 'avg_elec_connected'
+
+
+def _weighted_group_mean(df: pd.DataFrame, group_col: str, val_col: str, weight_col: str) -> pd.Series:
+    """Computes a weighted mean of val_col within each group, ignoring NaNs and non-positive weights."""
+    valid = df[val_col].notna() & df[weight_col].notna() & (df[weight_col] > 0)
+    sub = df.loc[valid, [group_col, val_col, weight_col]]
+    weighted_sum = (sub[val_col] * sub[weight_col]).groupby(sub[group_col]).sum()
+    weight_sum = sub[weight_col].groupby(sub[group_col]).sum()
+    return weighted_sum / weight_sum
 
 
 def weighted_quantile_map(source_series, source_weights, target_series, target_weights):
@@ -55,12 +65,12 @@ def weighted_quantile_map(source_series, source_weights, target_series, target_w
     """
     # --- Create a weighted CDF for the source data ---
     source_df = pd.DataFrame({'val': source_series, 'w': source_weights}).dropna()
-    source_df = source_df.sort_values('val')
+    source_df = source_df[source_df['w'] > 0].sort_values('val')
     source_df['cdf'] = np.cumsum(source_df['w']) / np.sum(source_df['w'])
 
     # --- Create a weighted CDF for the target data ---
     target_df = pd.DataFrame({'val': target_series, 'w': target_weights}).dropna()
-    target_df = target_df.sort_values('val')
+    target_df = target_df[target_df['w'] > 0].sort_values('val')
     target_df['cdf'] = np.cumsum(target_df['w']) / np.sum(target_df['w'])
 
     # --- Map the source to the target via the CDFs ---
@@ -71,38 +81,42 @@ def weighted_quantile_map(source_series, source_weights, target_series, target_w
 
 
 def aggregate_dhs_to_clusters(dhs_data: pd.DataFrame, app_config) -> pd.DataFrame:
-    """Aggregates household-level DHS data to the cluster level."""
+    """Aggregates household-level DHS data to the cluster level using DHS sample weights."""
     print("\n--- 2. Aggregating DHS Data to Cluster Level ---")
 
-    # Aggregation on ALL households to get cluster features
-    agg_all_hh = {
-        AVG_WI: (WI_COMBINED, 'mean'),
-        ACCESS_RATE: (HAS_ACCESS, 'mean'),
-        NUM_HH: (app_config.DHS_CLUSTER, 'size'),
-        app_config.DHS_PROVINCE: (app_config.DHS_PROVINCE, 'first'),
-        app_config.DHS_URBAN_RURAL: (app_config.DHS_URBAN_RURAL, 'first')
-    }
-    clusters_features_df = dhs_data.groupby(app_config.DHS_CLUSTER).agg(**agg_all_hh)
+    cluster_col = app_config.DHS_CLUSTER
 
-    # Aggregation on CONNECTED households to get the target variable
-    dhs_with_access = dhs_data[dhs_data[HAS_ACCESS] == 1].copy()
-    agg_connected_hh = {
-        AVG_ELEC_CONNECTED: (app_config.DHS_ELEC_KWH_ASSESSED_SURVEY, 'mean')
-    }
-    clusters_target_df = dhs_with_access.groupby(app_config.DHS_CLUSTER).agg(**agg_connected_hh)
+    # Metadata and total DHS sample weight per cluster (across all households)
+    clusters_features_df = dhs_data.groupby(cluster_col).agg(
+        **{
+            CLUSTER_WEIGHT: (WEIGHT, 'sum'),
+            NUM_HH: (cluster_col, 'size'),
+            app_config.DHS_PROVINCE: (app_config.DHS_PROVINCE, 'first'),
+            app_config.DHS_URBAN_RURAL: (app_config.DHS_URBAN_RURAL, 'first'),
+        }
+    )
 
-    # Merge features and target, keeping all clusters
-    final_clusters_df = pd.merge(
-        clusters_features_df,
-        clusters_target_df,
-        on=app_config.DHS_CLUSTER,
-        how='left'
-    ).reset_index()
+    # DHS-weighted cluster means for wealth index and electricity access rate
+    clusters_features_df[AVG_WI] = _weighted_group_mean(dhs_data, cluster_col, WI_COMBINED, WEIGHT)
+    clusters_features_df[ACCESS_RATE] = _weighted_group_mean(dhs_data, cluster_col, HAS_ACCESS, WEIGHT)
 
-    # Fill NaN for avg consumption with 0 for clusters with no access
-    final_clusters_df[AVG_ELEC_CONNECTED] = final_clusters_df[AVG_ELEC_CONNECTED].fillna(0)
+    # DHS-weighted mean electricity consumption across CONNECTED households only
+    dhs_with_access = dhs_data[dhs_data[HAS_ACCESS] == 1]
+    clusters_features_df[AVG_ELEC_CONNECTED] = _weighted_group_mean(
+        dhs_with_access, cluster_col, app_config.DHS_ELEC_KWH_ASSESSED_SURVEY, WEIGHT
+    )
 
-    print(f"Aggregated into {len(final_clusters_df)} unique clusters.")
+    # Zero-access clusters intentionally keep NaN for AVG_ELEC_CONNECTED so they are
+    # excluded from k-NN training of consumption per connected household, while remaining
+    # in final_clusters_df for RWI quantile calibration.
+    final_clusters_df = clusters_features_df.reset_index()
+
+    n_zero_access = (final_clusters_df[ACCESS_RATE] == 0).sum()
+    n_zero_weight = (final_clusters_df[CLUSTER_WEIGHT] <= 0).sum()
+    print(
+        f"Aggregated into {len(final_clusters_df)} unique clusters "
+        f"({n_zero_access} with 0% electricity access, {n_zero_weight} with 0 sample weight)."
+    )
     return final_clusters_df
 
 def calibrate_rwi_by_region(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app_config) -> pd.DataFrame:
@@ -139,7 +153,11 @@ def calibrate_rwi_by_region(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, ap
         grid_series_region = grid_region[app_config.COL_RWI_MEAN]
         grid_weights_region = grid_region[app_config.COL_HH_TOTAL]
         target_series_region = clusters_region[AVG_WI]
-        target_weights_region = pd.Series(np.ones(len(clusters_region)), index=clusters_region.index) # uniform weights
+        target_weights_region = clusters_region[CLUSTER_WEIGHT]
+
+        if target_weights_region[target_series_region.notna()].sum() <= 0:
+            print(f"  - WARNING: No positively weighted DHS clusters for region '{region}'. Skipping calibration.")
+            continue
 
         # Apply mapping and update the main grid dataframe
         calibrated_rwi = weighted_quantile_map(
@@ -165,7 +183,7 @@ def calibrate_rwi_country(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app_
     grid_series = grid_df[app_config.COL_RWI_MEAN]
     grid_weights = grid_df[app_config.COL_HH_TOTAL]
     target_series = clusters_df[AVG_WI]
-    target_weights = pd.Series(np.ones(len(clusters_df)), index=clusters_df.index) # uniform weights
+    target_weights = clusters_df[CLUSTER_WEIGHT]
 
     # Apply mapping and update the main grid dataframe
     calibrated_rwi = weighted_quantile_map(
@@ -182,15 +200,20 @@ def plot_rwi_distributions(grid_df: pd.DataFrame, clusters_df: pd.DataFrame, app
     plt.figure(figsize=(12, 6))
 
     # Calculate household weights for plotting
-    grid_df['pct_households'] = grid_df[app_config.COL_HH_TOTAL] / grid_df[app_config.COL_HH_TOTAL].sum()
+    grid_plot = grid_df.copy()
+    grid_plot['pct_households'] = grid_plot[app_config.COL_HH_TOTAL] / grid_plot[app_config.COL_HH_TOTAL].sum()
 
-    sns.kdeplot(data=grid_df, x=app_config.COL_RWI_MEAN, weights='pct_households',
+    clusters_plot = clusters_df.dropna(subset=[AVG_WI, CLUSTER_WEIGHT]).copy()
+    clusters_plot = clusters_plot[clusters_plot[CLUSTER_WEIGHT] > 0]
+    clusters_plot['pct_dhs_weight'] = clusters_plot[CLUSTER_WEIGHT] / clusters_plot[CLUSTER_WEIGHT].sum()
+
+    sns.kdeplot(data=grid_plot, x=app_config.COL_RWI_MEAN, weights='pct_households',
                 label='Original Meta RWI (Weighted)', color='gray', lw=2)
 
-    sns.kdeplot(data=clusters_df, x=AVG_WI,
-                label='Target DHS Cluster WI', color='green', lw=3, linestyle='--')
+    sns.kdeplot(data=clusters_plot, x=AVG_WI, weights='pct_dhs_weight',
+                label='Target DHS Cluster WI (hv005 Weighted)', color='green', lw=3, linestyle='--')
 
-    sns.kdeplot(data=grid_df, x=app_config.COL_RWI_REGION_MODIFIED, weights='pct_households',
+    sns.kdeplot(data=grid_plot, x=app_config.COL_RWI_REGION_MODIFIED, weights='pct_households',
                 label='Calibrated Grid RWI (Weighted)', color='orange', lw=3)
 
     plt.title('Comparison of wealth index distributions', fontsize=16)
@@ -233,7 +256,18 @@ def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFra
         features = [AVG_WI, ACCESS_RATE]
         target = AVG_ELEC_CONNECTED
 
-        valid_mask = cluster_subset[target].notna() & cluster_subset[features].notna().all(axis=1)
+        # Exclude zero-access clusters (target is undefined, not 0, when no HH has electricity)
+        valid_mask = (
+            cluster_subset[target].notna()
+            & (cluster_subset[ACCESS_RATE] > 0)
+            & cluster_subset[features].notna().all(axis=1)
+        )
+        n_excluded = (~valid_mask).sum()
+        print(f"  Using {valid_mask.sum()}/{len(cluster_subset)} clusters for k-NN training ({n_excluded} excluded, e.g. 0% access).")
+        if valid_mask.sum() == 0:
+            print(f"Skipping {subset_name} model: No clusters with electricity access available for training.")
+            continue
+
         X_train = cluster_subset.loc[valid_mask, features]
         y_train = cluster_subset.loc[valid_mask, target]
 
@@ -242,7 +276,8 @@ def train_and_predict_consumption(grid_df: pd.DataFrame, clusters_df: pd.DataFra
         X_train_scaled = scaler.fit_transform(X_train)
 
         # Create and train k-NN model
-        knn_model = KNeighborsRegressor(n_neighbors=k_neighbors, weights='uniform')
+        effective_k = min(k_neighbors, len(X_train))
+        knn_model = KNeighborsRegressor(n_neighbors=effective_k, weights='uniform')
         knn_model.fit(X_train_scaled, y_train)
 
         # Prepare grid data for prediction
