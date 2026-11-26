@@ -12,7 +12,7 @@ ISO_CODE = "UGA"
 # Define area of interest
 AREA_OF_INTEREST = "COUNTRY"  # Can be "COUNTRY" or a specific region like "Copperbelt"
 
-YEAR = 2019 # year of analysis
+YEAR = 2020 # year of analysis
 
 # -----------------------------------------------------------------------------
 # COORDINATE REFERENCE SYSTEMS
@@ -53,7 +53,8 @@ USE_POP_FILE = False
 # Lighting file
 # # set_lightscore_sy_xxxx.tif: Predicted likelihood that a settlement is electrified (0 to 1)
 # Link: http://www-personal.umich.edu/~brianmin/HREA/data.html
-HREA_LIGHTING_TIF = f"{ISO_CODE}_set_lightscore_2019.tif"
+# Note: HREA dataset ends in 2020; 2020 composite is used as spatial proxy for 2024
+HREA_LIGHTING_TIF = f"{ISO_CODE}_set_lightscore_2020.tif"
 
 # RWI file
 # Link: https://gee-community-catalog.org/projects/rwi/
@@ -74,8 +75,8 @@ UN_ENERGY_BALANCE_CSV = f"UNSD+DF_UNData_EnergyBalance+1.0_{ISO_CODE}.csv"
 # Grid line files
 # Data available at https://datacatalog.worldbank.org/search/dataset/0040190/Zambia---Electricity-Transmission-Network
 # or https://energydata.info/dataset/zambia-electrical-lines
-MV_LINES_SHP = "uganda-electricity-transmission-network/Uganda Electricity Transmission Network.shp"
-HV_LINES_SHP = MV_LINES_SHP
+MV_LINES_SHP = "uganda_distribution_lines.gpkg"
+HV_LINES_SHP = "uganda-electricity-transmission-network/Uganda Electricity Transmission Network.shp"
 
 # Census data files
 # The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
@@ -131,12 +132,12 @@ DHS_SERVICES_SURVEY_FILE = 'UGIR7BDT/UGIR7BFL'
 # label variable hv205    "Type of toilet facility"
 # label variable hv211    "Has motorcycle/scooter"
 # label variable hv212    "Has car/truck"
-# label variable hv223    "Type of cooking fuel"
+# label variable hv226    "Type of cooking fuel"
 # Warning: Kenya has no washing machine and no air conditioner labels
 labels_hh = ['hv001', 'hv005','hv009', 'hv022', 'hv023', 'hv024', 'hv025', 'hv206', 'hv207', 'hv208', 'hv209', 'hv243a',
              'hv243e',  #'sh132n', 'sh132o', 'sh132p',
              'hv270', 'hv270a', 'hv271', 'hv271a',
-             'hv201', 'hv205', 'hv211', 'hv212', 'hv223',
+             'hv201', 'hv205', 'hv211', 'hv212', 'hv226',
              ]
 
 # Define the columns we want to change in the DHS data and what their new names will be.
@@ -166,7 +167,7 @@ DHS_URBAN_RURAL = "Type of place of residence"
 DHS_PROVINCE = "Region"
 
 APPLIANCE_ELECTRICITY_CONS = 'appliance_energy_use_Uganda.csv'
-TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # 7 appliances: Tier 1 (Elec, Mobile, Radio), Tier 2 (TV), Tier 3 (Computer), Tier 4 (Fridge), Tier 5 (AC/Water heater)
+TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # 7 appliances: Elec(0), Mobile(0), Radio(0), TV(1), Computer(2), Refrigerator(3), Stove(4=Tier 5)
 
 # -----------------------------------------------------------------------------
 # PARAMETERS ENERGY BALANCE
@@ -175,13 +176,14 @@ TIER = np.array([0, 0, 0, 1, 2, 3, 4]) # 7 appliances: Tier 1 (Elec, Mobile, Rad
 # UN Energy Balance year
 UN_ENERGY_YEAR = YEAR
 
+
 # -----------------------------------------------------------------------------
 # ANALYSIS PARAMETERS
 # -----------------------------------------------------------------------------
 
 # Residential demand parameters
-THRESHOLD_ELEC_ACCESS_URBAN = 0.9
-THRESHOLD_ELEC_ACCESS_RURAL = 0.1
+THRESHOLD_ELEC_ACCESS_URBAN = 0.2
+THRESHOLD_ELEC_ACCESS_RURAL = 0.35
 MV_LINES_BUFFER_DIST = 500 # meters
 HV_LINES_BUFFER_DIST = 500 # meters
 CORRECTION_FACTOR_URBAN_HH_ACCESS = 1 # For HHwithAccess_urb calculation
