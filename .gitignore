@@ -22,3 +22,5 @@ convert_crs.py
 .DS_Store
 **/.DS_Store
 config_sensitivityAnalysisZambia/*
+Biblio/*
+scratch/*
