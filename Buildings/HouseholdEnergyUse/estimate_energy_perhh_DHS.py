@@ -99,12 +99,12 @@ def compute_energy_perhh_dhs(app_config, elas=0.4,nominal_household_size=4):
     # Define rules here. The code will process them from the highest tier to the lowest.
     # A household will only be assigned the first (highest-tier) rule it matches.
     override_rules = [
-        {'column': 'Source of drinking water', 'value': 'bottled water', 'tier': 4},
+        # {'column': 'Source of drinking water', 'value': 'bottled water', 'tier': 4},
         # {'column': 'Source of drinking water', 'value': 'piped to yard/plot', 'tier': 3},
         {'column': 'Source of drinking water', 'value': 'piped into dwelling', 'tier': 4},
         {'column': 'Type of toilet facility', 'value': 'flush to septic tank', 'tier': 3},
         {'column': 'Type of toilet facility', 'value': 'flush to piped sewer system', 'tier': 3},
-        {'column': 'Has motorcycle/scooter', 'value': 'yes', 'tier': 3},
+        # {'column': 'Has motorcycle/scooter', 'value': 'yes', 'tier': 3},
         {'column': 'Has car/truck', 'value': 'yes', 'tier': 5},
         # {'column': 'Type of cooking fuel', 'value': 'electricity', 'tier': 5},
 
