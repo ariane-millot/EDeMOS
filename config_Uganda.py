@@ -82,7 +82,7 @@ HV_LINES_SHP = "uganda-electricity-transmission-network/Uganda Electricity Trans
 # The file should contain the following data: 'region', 'HH_urban', 'HH_rural','size_HH_urban', 'size_HH_rural'
 PROVINCE_DATA_AVAILABLE = False
 CENSUS_PROVINCE_CSV = Path("Census") / COUNTRY /"Census_UGA.csv"
-CENSUS_NATIONAL_CSV = Path("Census") / COUNTRY / "Census_UGA_National.csv"
+CENSUS_NATIONAL_CSV = Path("Census") / COUNTRY / "Census_UGA_national_2020.csv"
 
 # DHS Survey related files (used by estimate_energy_rwi_link_national_new.py)
 # 1. Run read_DHS_hh_to_df.py in HouseholdEnergyUse folder to generate the household_data.csv
