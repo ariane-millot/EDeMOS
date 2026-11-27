@@ -91,29 +91,29 @@ def determine_electrification_status(grid_gdf, app_config, admin_gdf, prox_line=
             else:
                 lines_for_clip_and_buffer = current_lines_gdf.copy()
 
-            # 1. Clip lines
-            clipped_lines_gdf = gpd.clip(lines_for_clip_and_buffer, admin_projected)
-            if clipped_lines_gdf.empty:
-                print(f"No {line_name} found within the admin boundaries after clipping.")
+            # 1. Pre-filter lines to admin bounding box (expanded by buffer_dist)
+            minx, miny, maxx, maxy = admin_projected.total_bounds
+            candidate_lines = lines_for_clip_and_buffer.cx[
+                minx - buffer_dist:maxx + buffer_dist,
+                miny - buffer_dist:maxy + buffer_dist,
+            ]
+            if candidate_lines.empty:
+                print(f"No {line_name} found within the admin boundaries.")
                 continue
 
-            # 2. Buffer
-            buffered_lines = clipped_lines_gdf.buffer(buffer_dist)
-            if buffered_lines.is_empty.all():
-                print(f"Buffer for {line_name} is empty. Skipping spatial join.")
-                continue
-
-            # 3. Create a GeoDataFrame of the individual buffers
-            buffered_areas_gdf = gpd.GeoDataFrame(geometry=buffered_lines, crs=target_crs)
-
-            # 4. Perform the spatial join.
-            # Use an 'inner' join to get only the grid cells that intersect.
-            intersecting_grid = gpd.sjoin(grid_projected, buffered_areas_gdf, how='inner', predicate='intersects')
+            # 2. Spatial join using exact distance predicate ('dwithin') instead of clipping & buffering every segment
+            intersecting_grid = gpd.sjoin(
+                grid_projected[['geometry']],
+                candidate_lines[['geometry']],
+                how='inner',
+                predicate='dwithin',
+                distance=buffer_dist,
+            )
 
             # Get the unique indices of the original grid cells that are near the lines
             indices_to_update = intersecting_grid.index.unique()
 
-            # 5. Update the 'is_near_any_line' column in the ORIGINAL grid.
+            # 3. Update the 'is_near_any_line' column in the ORIGINAL grid.
             grid_gdf.loc[indices_to_update, app_config.COL_IS_NEAR_ANY_LINE] = True
 
         print(f"Updated 'is_near_any_line' column. Current counts:")
@@ -322,17 +322,24 @@ def calculate_household_numbers(grid_gdf, app_config, data_HH, regions_list):
     grid_gdf[app_config.COL_HH_RURAL] = (grid_gdf[app_config.COL_RES_RURAL_BUI] * app_config.NB_OF_HH_PER_RES_BUILDING_RURAL).fillna(0)
     grid_gdf[app_config.COL_HH_TOTAL] = grid_gdf[app_config.COL_HH_URBAN] + grid_gdf[app_config.COL_HH_RURAL]
 
-    if app_config.PROVINCE_DATA_AVAILABLE:
-        if not all(f"size_HH_{loc}" in data_HH.columns for loc in ["urban", "rural"]):
-            raise KeyError("Missing 'size_HH_urban' or 'size_HH_rural' in census data for population calculation.")
+    if not all(f"size_HH_{loc}" in data_HH.columns for loc in ["urban", "rural"]):
+        raise KeyError("Missing 'size_HH_urban' or 'size_HH_rural' in census data for population calculation.")
 
+    if app_config.PROVINCE_DATA_AVAILABLE:
         get_size_HH = lambda row: data_HH.loc[row[app_config.COL_ADMIN_NAME], f"size_HH_{row[app_config.COL_LOC_ASSESSED]}"] \
                                   if row[app_config.COL_ADMIN_NAME] in data_HH.index else np.nan
-        grid_gdf[app_config.COL_POP_URBAN] = grid_gdf[app_config.COL_HH_URBAN] * grid_gdf.apply(get_size_HH, axis=1)
-        grid_gdf[app_config.COL_POP_RURAL] = grid_gdf[app_config.COL_HH_RURAL] * grid_gdf.apply(get_size_HH, axis=1)
-        grid_gdf[app_config.COL_POPULATION] = grid_gdf[app_config.COL_POP_URBAN] + grid_gdf[app_config.COL_POP_RURAL]
-        total_population = grid_gdf[app_config.COL_POPULATION].sum()
-        print(f"Total population calculated: {total_population:,.0f}")
+        size_hh_series = grid_gdf.apply(get_size_HH, axis=1)
+        grid_gdf[app_config.COL_POP_URBAN] = grid_gdf[app_config.COL_HH_URBAN] * size_hh_series
+        grid_gdf[app_config.COL_POP_RURAL] = grid_gdf[app_config.COL_HH_RURAL] * size_hh_series
+    else:
+        nat_size_HH_urban = float(data_HH['size_HH_urban'].iloc[0])
+        nat_size_HH_rural = float(data_HH['size_HH_rural'].iloc[0])
+        grid_gdf[app_config.COL_POP_URBAN] = grid_gdf[app_config.COL_HH_URBAN] * nat_size_HH_urban
+        grid_gdf[app_config.COL_POP_RURAL] = grid_gdf[app_config.COL_HH_RURAL] * nat_size_HH_rural
+
+    grid_gdf[app_config.COL_POPULATION] = grid_gdf[app_config.COL_POP_URBAN] + grid_gdf[app_config.COL_POP_RURAL]
+    total_population = grid_gdf[app_config.COL_POPULATION].sum()
+    print(f"Total population calculated: {total_population:,.0f}")
 
     print("Finished calculating household numbers.")
     return grid_gdf, df_HH_buildings
@@ -384,17 +391,28 @@ def estimate_hh_with_access(grid_gdf, app_config, data_HH, df_HH_buildings=None)
     grid_gdf[app_config.COL_HH_WO_ACCESS_RUR] = grid_gdf[app_config.COL_HH_RURAL] - grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR]
     grid_gdf[app_config.COL_HH_WO_ACCESS] = grid_gdf[app_config.COL_HH_WO_ACCESS_URB] + grid_gdf[app_config.COL_HH_WO_ACCESS_RUR]
 
-    if app_config.PROVINCE_DATA_AVAILABLE and df_HH_buildings is not None:
-        print("Aggregating HH and population access data by region...")
-        # Compute population with access
+    # Compute population with access
+    if not all(f"size_HH_{loc}" in data_HH.columns for loc in ["urban", "rural"]):
+        raise KeyError("Missing 'size_HH_urban' or 'size_HH_rural' in census data for population access calculation.")
+
+    if app_config.PROVINCE_DATA_AVAILABLE:
         get_size_HH = lambda row: data_HH.loc[row[app_config.COL_ADMIN_NAME], f"size_HH_{row[app_config.COL_LOC_ASSESSED]}"] \
                               if row[app_config.COL_ADMIN_NAME] in data_HH.index else np.nan
+        size_hh_series = grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
+        grid_gdf[app_config.COL_POP_WITH_ACCESS_URB] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] * size_hh_series
+        grid_gdf[app_config.COL_POP_WITH_ACCESS_RUR] = grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] * size_hh_series
+    else:
+        nat_size_HH_urban = float(data_HH['size_HH_urban'].iloc[0])
+        nat_size_HH_rural = float(data_HH['size_HH_rural'].iloc[0])
+        grid_gdf[app_config.COL_POP_WITH_ACCESS_URB] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] * nat_size_HH_urban
+        grid_gdf[app_config.COL_POP_WITH_ACCESS_RUR] = grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] * nat_size_HH_rural
 
-        grid_gdf[app_config.COL_POP_WITH_ACCESS_URB] = grid_gdf[app_config.COL_HH_WITH_ACCESS_URB] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
-        grid_gdf[app_config.COL_POP_WITH_ACCESS_RUR] = grid_gdf[app_config.COL_HH_WITH_ACCESS_RUR] * grid_gdf.apply(get_size_HH, axis=1).replace([np.inf, -np.inf, np.nan], 0)
-        grid_gdf[app_config.COL_POP_WITH_ACCESS] = grid_gdf[app_config.COL_POP_WITH_ACCESS_URB] + grid_gdf[app_config.COL_POP_WITH_ACCESS_RUR]
-        total_population_with_access = grid_gdf[app_config.COL_POP_WITH_ACCESS].sum()
-        print(f"Total population with access (estimated): {total_population_with_access:,.0f}")
+    grid_gdf[app_config.COL_POP_WITH_ACCESS] = grid_gdf[app_config.COL_POP_WITH_ACCESS_URB] + grid_gdf[app_config.COL_POP_WITH_ACCESS_RUR]
+    total_population_with_access = grid_gdf[app_config.COL_POP_WITH_ACCESS].sum()
+    print(f"Total population with access (estimated): {total_population_with_access:,.0f}")
+
+    if app_config.PROVINCE_DATA_AVAILABLE and df_HH_buildings is not None:
+        print("Aggregating HH and population access data by region...")
 
         # Aggregate all access metrics by region
         df_access_summary = grid_gdf.groupby(app_config.COL_ADMIN_NAME)[[
